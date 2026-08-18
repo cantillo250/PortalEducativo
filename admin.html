@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Docente - Colegio Frida Kahlo</title>
+  <!-- Fuente Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root {
+      --azul-marino: #1a365d;
+      --vino-granate: #722f37;
+      --dorado: #d4af37;
+      --azul-rey: #2b6cb0;
+      --fondo-claro: #f4f6f9;
+      --texto-oscuro: #2d3748;
+      --borde: #cbd5e1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--fondo-claro); color: var(--texto-oscuro); }
+    
+    header { 
+      background: linear-gradient(135deg, var(--azul-marino) 0%, #0f2442 100%); 
+      color: white; 
+      padding: 25px 20px; 
+      text-align: center; 
+      border-bottom: 4px solid var(--dorado);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    header h1 { font-weight: 600; font-size: 24px; letter-spacing: 0.5px; }
+
+    /* LOGIN */
+    .login-container { 
+      max-width: 440px; 
+      margin: 60px auto; 
+      background: white; 
+      padding: 35px 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+      border-top: 5px solid var(--vino-granate);
+    }
+    .login-container h2 {
+      margin-bottom: 20px; 
+      text-align: center; 
+      color: var(--azul-marino);
+      font-weight: 600;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    .main-container { max-width: 1150px; margin: 30px auto; padding: 0 20px; display: none; }
+
+    /* TARJETAS */
+    .card { 
+      background: white; 
+      padding: 25px; 
+      border-radius: 10px; 
+      margin-bottom: 25px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+      border: 1px solid #e2e8f0;
+    }
+    .card h2 { 
+      color: var(--azul-marino); 
+      margin-bottom: 18px; 
+      border-bottom: 2px solid var(--dorado); 
+      padding-bottom: 8px; 
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* FORMULARIOS */
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; color: var(--azul-marino); }
+    .form-group input, .form-group select, .form-group textarea { 
+      width: 100%; 
+      padding: 10px 12px; 
+      border: 1px solid var(--borde); 
+      border-radius: 6px; 
+      font-size: 13px; 
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--azul-rey);
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+    }
+
+    /* BOTONES */
+    .btn { 
+      background-color: var(--azul-marino); 
+      color: white; 
+      border: none; 
+      padding: 10px 20px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 13px; 
+      font-weight: 500; 
+      transition: background 0.2s, transform 0.1s; 
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { background-color: #122540; }
+    .btn:active { transform: scale(0.98); }
+    .btn-success { background-color: var(--vino-granate); }
+    .btn-success:hover { background-color: #542228; }
+    .btn-danger { background-color: #c53030; }
+    .btn-danger:hover { background-color: #9b2c2c; }
+
+    /* NAVEGACIÓN Y PESTAÑAS */
+    .nav-tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--borde); margin-bottom: 20px; }
+    .nav-btn { 
+      background: #e2e8f0; 
+      color: #4a5568; 
+      border: none; 
+      padding: 12px 22px; 
+      border-radius: 8px 8px 0 0; 
+      font-weight: 500; 
+      cursor: pointer; 
+      font-size: 14px; 
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: #cbd5e1; color: var(--azul-marino); }
+    .nav-btn.active { 
+      background: var(--azul-marino); 
+      color: white; 
+      border-bottom: 3px solid var(--dorado); 
+    }
+
+    .badge-notif { 
+      display: none; 
+      background-color: var(--vino-granate); 
+      color: white; 
+      font-size: 11px; 
+      padding: 2px 7px; 
+      border-radius: 10px; 
+      margin-left: 6px; 
+      font-weight: 600; 
+    }
+    .badge-nuevo { 
+      background-color: var(--vino-granate); 
+      color: white; 
+      font-size: 10px; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      font-weight: 600; 
+    }
+
+    /* TABLAS */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px; }
+    th { background-color: #edf2f7; color: var(--azul-marino); font-weight: 600; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* CHAT / BANDEJA DE MENSAJES */
+    .chat-layout { 
+      display: flex; 
+      gap: 0; 
+      border: 1px solid var(--borde); 
+      border-radius: 8px; 
+      overflow: hidden; 
+      background: white; 
+      height: 520px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    .chat-list { width: 35%; border-right: 1px solid var(--borde); overflow-y: auto; background-color: #f8fafc; }
+    .chat-item { padding: 14px 16px; border-bottom: 1px solid #edf2f7; cursor: pointer; transition: background 0.2s; }
+    .chat-item:hover { background-color: #edf2f7; }
+    .chat-item.active { background-color: #e2e8f0; border-left: 4px solid var(--vino-granate); }
+    .chat-window { width: 65%; display: flex; flex-direction: column; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Panel Docente - Colegio Frida Kahlo</h1>
+  </header>
+
+  <!-- ACCESO POR GRADO ASIGNADO -->
+  <div id="loginSection" class="login-container">
+    <h2>Acceso Profesores</h2>
+    
+    <div class="form-group">
+      <label for="gradoSelect">Selecciona tu Grado / Grupo Asignado:</label>
+      <select id="gradoSelect">
+        <option value="">-- Seleccionar Grado --</option>
+        <optgroup label="Primaria">
+          <option value="1 A">1° A - Primaria</option>
+          <option value="1 B">1° B - Primaria</option>
+          <option value="2 A">2° A - Primaria</option>
+          <option value="2 B">2° B - Primaria</option>
+          <option value="3 A">3° A - Primaria</option>
+          <option value="3 B">3° B - Primaria</option>
+          <option value="4 A">4° A - Primaria</option>
+          <option value="4 B">4° B - Primaria</option>
+          <option value="5 A">5° A - Primaria</option>
+          <option value="5 B">5° B - Primaria</option>
+          <option value="6 A">6° A - Primaria</option>
+          <option value="6 B">6° B - Primaria</option>
+        </optgroup>
+        <optgroup label="Secundaria">
+          <option value="1 A Sec">1° A - Secundaria</option>
+          <option value="1 B Sec">1° B - Secundaria</option>
+          <option value="2 A Sec">2° A - Secundaria</option>
+          <option value="2 B Sec">2° B - Secundaria</option>
+          <option value="3 A Sec">3° A - Secundaria</option>
+          <option value="3 B Sec">3° B - Secundaria</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="passInput">Contraseña del Sistema:</label>
+      <input type="password" id="passInput" placeholder="Introduce la contraseña general">
+    </div>
+
+    <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="login()">Ingresar al Sistema</button>
+  </div>
+
+  <!-- PANEL PRINCIPAL MAESTRO -->
+  <div id="adminPanel" class="main-container">
+    
+    <!-- BARRA SUPERIOR -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--borde);">
+      <span style="font-size: 15px; font-weight: 600; color: var(--azul-marino);" id="etiquetaGrado">Grado Asignado: -</span>
+      <button class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <div class="nav-tabs">
+      <button class="nav-btn active" onclick="openTabDocente('tab-gestion', this)">📚 Control Académico</button>
+      <button class="nav-btn" onclick="openTabDocente('tab-chat-docente', this)">
+        💬 Mensajes Recibidos
+        <span id="badgeNotificaciones" class="badge-notif">0</span>
+      </button>
+    </div>
+
+    <!-- PESTAÑA 1: CONTROL ACADÉMICO -->
+    <div id="tab-gestion" class="tab-content active">
+      
+      <!-- 1. CREAR TAREA -->
+      <div class="card">
+        <h2>1. Asignar Tarea al Grupo</h2>
+        <form id="actividadGrupoForm" onsubmit="crearTareaParaGrupo(event)">
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="trimestreInput">Trimestre:</label>
+              <select id="trimestreInput">
+                <option value="1er Trimestre">1er Trimestre</option>
+                <option value="2do Trimestre">2do Trimestre</option>
+                <option value="3er Trimestre">3er Trimestre</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="materiaDocenteInput">Asignatura:</label>
+              <input type="text" id="materiaDocenteInput" placeholder="Ej. Matemáticas">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="grupoInput">Grupo Asignado:</label>
+              <input type="text" id="grupoInput" readonly style="background-color: #edf2f7; font-weight: 600; color: var(--azul-marino);">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 2; min-width: 250px;">
+              <label for="tituloInput">Título de la Tarea:</label>
+              <input type="text" id="tituloInput" placeholder="Ej. Tarea #4 - Exposición" required>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="fechaInput">Fecha Límite:</label>
+              <input type="date" id="fechaInput" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="observacionesInput">Observaciones e Instrucciones Generales:</label>
+            <textarea id="observacionesInput" rows="2" placeholder="Ej. Entregar en formato PDF o libreta..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="archivoInput">Adjuntar Material (PDF/Imagen):</label>
+            <input type="file" id="archivoInput" accept="image/*,application/pdf">
+          </div>
+
+          <button type="submit" class="btn btn-success">Asignar Tarea a Mi Grupo</button>
+        </form>
+      </div>
+
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO -->
+      <div class="card">
+        <h2>2. Calificación y Observaciones por Alumno</h2>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <select id="trimestreBuscar" style="width: 220px; padding: 9px;">
+            <option value="1er Trimestre">1er Trimestre</option>
+            <option value="2do Trimestre">2do Trimestre</option>
+            <option value="3er Trimestre">3er Trimestre</option>
+          </select>
+          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Alumnos del Grado</button>
+        </div>
+
+        <div id="seccionTablaGrupo" style="display: none; margin-top: 20px; overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Última Actividad</th>
+                <th>Estatus</th>
+                <th>Observaciones Individuales</th>
+                <th>Guardar</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaGrupo"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PESTAÑA 2: BANDEJA DE MENSAJES AUTOMÁTICA -->
+    <div id="tab-chat-docente" class="tab-content">
+      <div class="card">
+        <h2>💬 Mensajería Automática de Mi Grado</h2>
+        <p style="color: #718096; font-size: 13px; margin-bottom: 15px;">
+          A continuación se muestran automáticamente los alumnos de tu grado que tienen mensajes registrados.
+        </p>
+
+        <div class="chat-layout">
+          <!-- LISTA DINÁMICA DE CONVERSACIONES -->
+          <div class="chat-list" id="listaConversaciones">
+            <div style="padding:20px; color:#a0aec0; font-size:13px; text-align:center;">
+              Cargando conversaciones automáticas...
+            </div>
+          </div>
+
+          <!-- VENTANA DEL CHAT SELECCIONADO -->
+          <div class="chat-window">
+            <div style="background-color: var(--azul-marino); color: white; padding: 14px 18px; font-weight: 600; font-size: 14px; border-bottom: 3px solid var(--dorado);">
+              <span id="headerChatDocente">Selecciona un alumno para chatear</span>
+            </div>
+
+            <div id="mensajesDocenteContenedor" style="flex:1; overflow-y: auto; background-color: #f8fafc; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="text-align: center; color: #a0aec0; margin-top: 50px; font-size: 13px;">
+                No hay ningún chat activo seleccionado.
+              </div>
+            </div>
+
+            <!-- RESPUESTA -->
+            <div id="areaRespuestaChat" style="padding: 15px; background: white; border-top: 1px solid var(--borde); display: none;">
+              <textarea id="textoDocenteInput" rows="2" placeholder="Escribe tu respuesta..." style="width: 100%; padding: 10px; border: 1px solid var(--borde); border-radius: 6px; outline: none; font-size: 13px; margin-bottom: 10px;"></textarea>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <input type="file" id="adjuntoDocenteInput" accept="image/*,video/*,application/pdf" style="font-size: 12px;">
+                </div>
+                <button class="btn btn-success" onclick="enviarRespuestaDocente()">Enviar Respuesta</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://imhyumybedzvpzayqfqj.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const CLAVE_DOCENTE_GENERAL = "docente123";
+
+    let grupoSesion = null;
+    let codigoChatDocenteActual = null;
+    let listaMensajesNuevos = new Set();
+
+    // INICIO DE SESIÓN
+    function login() {
+      const gradoSelected = document.getElementById('gradoSelect').value;
+      const pass = document.getElementById('passInput').value;
+
+      if (!gradoSelected) {
+        alert('Por favor selecciona un Grado / Grupo.');
+        return;
+      }
+
+      if (pass === CLAVE_DOCENTE_GENERAL) {
+        grupoSesion = gradoSelected;
+        
+        const materiaGuardada = localStorage.getItem(`docente_materia_${grupoSesion}`) || '';
+
+        if (document.getElementById('materiaDocenteInput')) {
+          document.getElementById('materiaDocenteInput').value = materiaGuardada;
+          document.getElementById('materiaDocenteInput').oninput = (e) => {
+            localStorage.setItem(`docente_materia_${grupoSesion}`, e.target.value);
+          };
+        }
+
+        if (document.getElementById('etiquetaGrado')) {
+          document.getElementById('etiquetaGrado').innerText = `Grado Asignado: ${grupoSesion}`;
+        }
+        
+        if (document.getElementById('grupoInput')) {
+          document.getElementById('grupoInput').value = grupoSesion;
+        }
+
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+
+        cargarBandejaMensajesDocente();
+        escucharNuevosMensajesEnVivo();
+      } else {
+        alert('Contraseña incorrecta.');
+      }
+    }
+
+    function logout() {
+      grupoSesion = null;
+      resetearVentanaChat();
+
+      document.getElementById('passInput').value = '';
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+
+    function openTabDocente(tabId, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      if(btnElement) btnElement.classList.add('active');
+
+      if (tabId === 'tab-chat-docente') {
+        cargarBandejaMensajesDocente();
+      }
+    }
+
+    // GESTIÓN ACADÉMICA
+    async function crearTareaParaGrupo(e) {
+      e.preventDefault();
+      const trimestre = document.getElementById('trimestreInput').value;
+      const grupo = grupoSesion;
+      const materia = document.getElementById('materiaDocenteInput').value.trim() || 'General';
+      const titulo = document.getElementById('tituloInput').value.trim();
+      const fecha = document.getElementById('fechaInput').value;
+      const observaciones = document.getElementById('observacionesInput').value.trim();
+      const archivoFile = document.getElementById('archivoInput').files[0];
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupo);
+
+      if (!alumnos || alumnos.length === 0) {
+        alert('No hay alumnos registrados en tu grupo: ' + grupo);
+        return;
+      }
+
+      let urlArchivo = null;
+      if (archivoFile) {
+        const fileExt = archivoFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivoFile);
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urlArchivo = data.publicUrl;
+        }
+      }
+
+      const registros = alumnos.map(al => ({
+        alumno_codigo: al.codigo,
+        trimestre: trimestre,
+        materia: materia,
+        titulo: titulo,
+        fecha: fecha,
+        estado: 'Pendiente',
+        observaciones: observaciones,
+        url_archivo: urlArchivo
+      }));
+
+      const { error } = await supabaseClient.from('actividades').insert(registros);
+
+      if (error) {
+        alert('Error al asignar tarea: ' + error.message);
+      } else {
+        alert(`¡Éxito! Tarea asignada a los ${alumnos.length} alumnos del grupo ${grupo}.`);
+        document.getElementById('actividadGrupoForm').reset();
+        document.getElementById('grupoInput').value = grupoSesion;
+      }
+    }
+
+    async function cargarAlumnosDelGrupo() {
+      const trimestre = document.getElementById('trimestreBuscar').value;
+      const tbody = document.getElementById('cuerpoTablaGrupo');
+      document.getElementById('seccionTablaGrupo').style.display = 'block';
+
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando alumnos...</td></tr>';
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
+      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre);
+
+      if (!alumnos || alumnos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron alumnos en el grupo ' + grupoSesion + '</td></tr>';
+        return;
+      }
+
+      let html = '';
+      alumnos.forEach(al => {
+        const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
+        const ultAct = actAlumno.length > 0 ? actAlumno[0] : null;
+
+        html += `
+          <tr>
+            <td><strong>${al.nombre}</strong><br><small style="color:#718096;">${al.codigo}</small></td>
+            <td>${ultAct ? ultAct.titulo : 'Sin tareas'}</td>
+            <td>
+              ${ultAct ? `
+                <select id="est_${ultAct.id}" style="padding: 4px; border-radius: 4px; border: 1px solid var(--borde);">
+                  <option value="Pendiente" ${ultAct.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                  <option value="Entregado" ${ultAct.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                  <option value="En Revisión" ${ultAct.estado === 'En Revisión' ? 'selected' : ''}>En Revisión</option>
+                </select>
+              ` : '-'}
+            </td>
+            <td>
+              ${ultAct ? `<input type="text" id="obs_${ultAct.id}" value="${ultAct.observaciones || ''}" placeholder="Agregar nota..." style="padding: 4px; width: 100%;">` : '-'}
+            </td>
+            <td>
+              ${ultAct ? `<button class="btn btn-success" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTarea(${ultAct.id})">Guardar</button>` : '-'}
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    async function actualizarTarea(id) {
+      const nuevoEstado = document.getElementById(`est_${id}`).value;
+      const nuevaObs = document.getElementById(`obs_${id}`).value;
+
+      const { error } = await supabaseClient
+        .from('actividades')
+        .update({ estado: nuevoEstado, observaciones: nuevaObs })
+        .eq('id', id);
+
+      if (error) {
+        alert('Error al actualizar: ' + error.message);
+      } else {
+        alert('Calificación guardada correctamente.');
+      }
+    }
+
+    // BANDEJA DE MENSAJES Y CHAT
+    async function cargarBandejaMensajesDocente() {
+      if (!grupoSesion) return;
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
+      const listaContenedor = document.getElementById('listaConversaciones');
+      
+      if (!alumnos || alumnos.length === 0) {
+        listaContenedor.innerHTML = '<div style="padding:20px; font-size:12px; color:#718096; text-align:center;">No hay alumnos registrados en tu grado.</div>';
+        resetearVentanaChat();
+        return;
+      }
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      if (codigoChatDocenteActual && !codigosAlumnos.includes(codigoChatDocenteActual)) {
+        resetearVentanaChat();
+      }
+
+      const { data: mensajes } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .in('alumno_codigo', codigosAlumnos)
+        .order('created_at', { ascending: false });
+
+      if (!mensajes || mensajes.length === 0) {
+        listaContenedor.innerHTML = '<div style="padding:20px; font-size:12px; color:#718096; text-align:center;">No hay mensajes recibidos en este grado.</div>';
+        return;
+      }
+
+      const chatsMap = new Map();
+      mensajes.forEach(m => {
+        if (!chatsMap.has(m.alumno_codigo)) {
+          chatsMap.set(m.alumno_codigo, m);
+        }
+      });
+
+      let htmlLista = '';
+      chatsMap.forEach((ultimoMensaje, codigoAlumno) => {
+        const alumnoObj = alumnos.find(a => a.codigo === codigoAlumno);
+        const nombreAlumno = alumnoObj ? alumnoObj.nombre : codigoAlumno;
+        const tieneNuevo = listaMensajesNuevos.has(codigoAlumno);
+
+        htmlLista += `
+          <div class="chat-item ${codigoChatDocenteActual === codigoAlumno ? 'active' : ''}" onclick="seleccionarChatDocente('${codigoAlumno}', '${nombreAlumno.replace(/'/g, "\\'")}')">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+              <strong style="font-size:13px; color:var(--azul-marino);">${nombreAlumno}</strong>
+              ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+            </div>
+            <p style="font-size:12px; color:#718096; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">
+              ${ultimoMensaje.remitente === 'docente' ? 'Tú: ' : ''}${ultimoMensaje.mensaje || '📎 Adjunto'}
+            </p>
+          </div>
+        `;
+      });
+
+      listaContenedor.innerHTML = htmlLista;
+    }
+
+    function resetearVentanaChat() {
+      codigoChatDocenteActual = null;
+      document.getElementById('headerChatDocente').innerText = 'Selecciona un alumno para chatear';
+      document.getElementById('mensajesDocenteContenedor').innerHTML = '<div style="text-align: center; color: #a0aec0; margin-top: 50px; font-size: 13px;">No hay ningún chat activo seleccionado.</div>';
+      document.getElementById('areaRespuestaChat').style.display = 'none';
+    }
+
+    function escucharNuevosMensajesEnVivo() {
+      supabaseClient
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'mensajes_chat' },
+          async (payload) => {
+            if (payload.new.remitente === 'alumno') {
+              const { data: alumno } = await supabaseClient.from('alumnos').select('grupo').eq('codigo', payload.new.alumno_codigo).single();
+
+              if (alumno && alumno.grupo === grupoSesion) {
+                if (codigoChatDocenteActual === payload.new.alumno_codigo) {
+                  cargarMensajesDocente();
+                } else {
+                  listaMensajesNuevos.add(payload.new.alumno_codigo);
+                  actualizarBadgeNotificaciones();
+                }
+                cargarBandejaMensajesDocente();
+              }
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    function actualizarBadgeNotificaciones() {
+      const badge = document.getElementById('badgeNotificaciones');
+      if (listaMensajesNuevos.size > 0) {
+        badge.innerText = listaMensajesNuevos.size;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.innerText = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    async function seleccionarChatDocente(codigoAlumno, nombreAlumno) {
+      codigoChatDocenteActual = codigoAlumno;
+      listaMensajesNuevos.delete(codigoAlumno);
+      actualizarBadgeNotificaciones();
+
+      document.getElementById('headerChatDocente').innerText = `Atendiendo a: ${nombreAlumno} (${codigoAlumno})`;
+      document.getElementById('areaRespuestaChat').style.display = 'block';
+
+      cargarBandejaMensajesDocente();
+      cargarMensajesDocente();
+    }
+
+    async function cargarMensajesDocente() {
+      if (!codigoChatDocenteActual) return;
+
+      const contenedor = document.getElementById('mensajesDocenteContenedor');
+
+      const { data: mensajes, error } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .eq('alumno_codigo', codigoChatDocenteActual)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        contenedor.innerHTML = '<div style="color:red; text-align:center;">Error al cargar mensajes.</div>';
+        return;
+      }
+
+      if (!mensajes || mensajes.length === 0) {
+        contenedor.innerHTML = '<div style="text-align:center; color:#a0aec0; margin-top:50px; font-size:13px;">No hay mensajes registrados.</div>';
+        return;
+      }
+
+      let html = '';
+      mensajes.forEach(m => {
+        const esDocente = m.remitente === 'docente';
+        
+        let contenidoAdjunto = '';
+        if (m.url_archivo) {
+          const esImg = m.url_archivo.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+          if (esImg) {
+            contenidoAdjunto = `<br><img src="${m.url_archivo}" style="max-width:200px; border-radius:6px; margin-top:6px; cursor:pointer;" onclick="window.open('${m.url_archivo}')">`;
+          } else {
+            contenidoAdjunto = `<br><a href="${m.url_archivo}" target="_blank" style="color:${esDocente ? '#d4af37' : '#2b6cb0'}; font-weight:600; font-size:12px;">📎 Ver Archivo Adjunto</a>`;
+          }
+        }
+
+        html += `
+          <div style="align-self: ${esDocente ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esDocente ? 'var(--azul-marino)' : '#ffffff'}; color: ${esDocente ? '#ffffff' : '#2d3748'}; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${esDocente ? 'none' : '1px solid var(--borde)'};">
+            <small style="display:block; font-size:10px; opacity:0.8; margin-bottom:3px; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
+            <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
+            ${contenidoAdjunto}
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function enviarRespuestaDocente() {
+      const textoInput = document.getElementById('textoDocenteInput');
+      const archivoInput = document.getElementById('adjuntoDocenteInput');
+      const mensaje = textoInput.value.trim();
+      const archivoFile = archivoInput.files[0];
+
+      if (!mensaje && !archivoFile) {
+        alert('Escribe un mensaje o adjunta un archivo.');
+        return;
+      }
+
+      if (!codigoChatDocenteActual) {
+        alert('Selecciona un chat primero.');
+        return;
+      }
+
+      let urlArchivo = null;
+      if (archivoFile) {
+        const fileExt = archivoFile.name.split('.').pop();
+        const fileName = `chat_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivoFile);
+        
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urlArchivo = data.publicUrl;
+        }
+      }
+
+      const { error } = await supabaseClient.from('mensajes_chat').insert([{
+        alumno_codigo: codigoChatDocenteActual,
+        remitente: 'docente',
+        mensaje: mensaje,
+        url_archivo: urlArchivo
+      }]);
+
+      if (error) {
+        alert('Error al enviar mensaje: ' + error.message);
+      } else {
+        textoInput.value = '';
+        archivoInput.value = '';
+        cargarMensajesDocente();
+        cargarBandejaMensajesDocente();
+      }
+    }
+  </script>
+</body>
+</html>

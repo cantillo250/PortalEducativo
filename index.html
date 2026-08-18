@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colegio Frida Kahlo - Portal Educativo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --azul-marino: #032b5b;
+      --vino-granate: #800c1c;
+      --dorado: #cfa838;
+      --dorado-claro: #f1dfa3;
+      --fondo: #f8fafc;
+      --blanco: #ffffff;
+      --texto: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--fondo); color: var(--texto); }
+
+    /* ENCABEZADO INSTITUCIONAL */
+    header {
+      background: linear-gradient(135deg, var(--azul-marino) 50%, var(--vino-granate) 100%);
+      color: white;
+      padding: 25px 20px;
+      border-bottom: 5px solid var(--dorado);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .header-container {
+      max-width: 1050px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .logo-escudo {
+      width: 130px;
+      height: 130px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+    }
+
+    .header-text h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-text p {
+      color: var(--dorado-claro);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* NAVEGACIÓN PRINCIPAL */
+    nav {
+      background-color: var(--azul-marino);
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.85);
+      padding: 16px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    nav button:hover {
+      color: white;
+      background-color: rgba(255,255,255,0.08);
+    }
+
+    nav button.active {
+      color: var(--dorado-claro);
+      font-weight: 700;
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    nav button.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background-color: var(--dorado);
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    .container { max-width: 1000px; margin: 35px auto; padding: 0 20px; }
+
+    .tab-content {
+      display: none;
+      background: var(--blanco);
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-title {
+      color: var(--azul-marino);
+      font-size: 22px;
+      font-weight: 700;
+      border-left: 5px solid var(--vino-granate);
+      padding-left: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* MÓDULO BÚSQUEDA Y PROGRESO */
+    .search-box {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .search-box input, .search-box select {
+      padding: 12px 15px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-box input { flex: 2; min-width: 200px; }
+    .search-box select { flex: 1; min-width: 150px; }
+
+    .search-box button {
+      padding: 12px 25px;
+      background-color: var(--vino-granate);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .search-box button:hover { background-color: #600814; }
+
+    .student-info {
+      background: linear-gradient(to right, #eef2ff, #fff);
+      padding: 18px;
+      border-radius: 8px;
+      border-left: 5px solid var(--azul-marino);
+      margin-bottom: 20px;
+    }
+
+    /* TABLA DE ACTIVIDADES */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 14px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    th { background-color: var(--azul-marino); color: white; font-weight: 600; }
+
+    .status { padding: 5px 10px; border-radius: 20px; font-weight: 600; font-size: 12px; display: inline-block; }
+    .status.entregado { background-color: #d1fae5; color: #065f46; }
+    .status.pendiente { background-color: #fee2e2; color: #991b1b; }
+    .status.revision { background-color: #fef3c7; color: #92400e; }
+
+    .btn-recurso {
+      display: inline-block;
+      padding: 6px 12px;
+      background-color: var(--azul-marino);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .obs-text { font-style: italic; color: #64748b; font-size: 13px; }
+
+    /* TARJETAS DINÁMICAS (DEL DASHBOARD) */
+    .dynamic-card {
+      margin-top: 20px;
+      padding: 22px;
+      background: #fafafa;
+      border-radius: 8px;
+      border-left: 4px solid var(--dorado);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER INSTITUCIONAL -->
+  <header>
+    <div class="header-container">
+      <!-- Reemplaza la ruta de la imagen con la tuya si la subiste a Supabase u otra carpeta -->
+      <img src="escudo.png" alt="Escudo Colegio Frida Kahlo" class="logo-escudo">
+      <div class="header-text">
+        <h1>Colegio Frida Kahlo</h1>
+        <p>Excelencia Académica</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVEGACIÓN -->
+  <nav>
+    <button class="nav-btn active" onclick="openTab('escuela', this)">La Escuela</button>
+    <button class="nav-btn" onclick="openTab('anuncios', this)">Anuncios</button>
+    <button class="nav-btn" onclick="openTab('contacto', this)">Contacto</button>
+    <button class="nav-btn" onclick="openTab('progreso', this)">Mi Progreso</button>
+  </nav>
+
+  <div class="container">
+    <!-- SECCIONES DINÁMICAS -->
+    <section id="escuela" class="tab-content active">
+      <h2 class="tab-title">La Escuela</h2>
+    </section>
+
+    <section id="anuncios" class="tab-content">
+      <h2 class="tab-title">Avisos e Informes Importantes</h2>
+    </section>
+
+    <section id="contacto" class="tab-content">
+  <h2 class="tab-title">Chat Directo y Atención Privada</h2>
+  <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Ingresa la clave del alumno para acceder a tu canal de comunicación privado con el personal docente y directivo.</p>
+  
+  <!-- ACCESO AL CHAT POR CÓDIGO -->
+  <div class="search-box">
+    <input type="text" id="codigoChatInput" placeholder="Ingresa la Clave del Alumno">
+    <button onclick="iniciarChatAlumno()">Acceder al Chat</button>
+  </div>
+
+  <!-- CAJA DEL CHAT PRIVADO -->
+  <div id="cajaChat" style="display: none; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 20px;">
+    <div style="background-color: var(--azul-marino); color: white; padding: 12px 20px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+      <span id="chatHeaderAlumno">Chat Privado</span>
+      <small style="color: var(--dorado-claro);">Canal Oficial Colegio Frida Kahlo</small>
+    </div>
+
+    <!-- ÁREA DE MENSAJES -->
+    <div id="mensajesContenedor" style="height: 350px; overflow-y: auto; padding: 15px; background-color: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
+      <!-- Los mensajes se cargan dinámicamente -->
+    </div>
+
+    <!-- PANEL DE ENVÍO -->
+    <div style="padding: 15px; background-color: white; border-top: 1px solid #e2e8f0;">
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <textarea id="textoMensajeInput" rows="2" placeholder="Escribe tu consulta o mensaje aquí..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px;"></textarea>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <label style="font-size: 12px; color: #64748b; font-weight: 600;">Adjuntar Imagen / Video (Opcional):</label>
+          <input type="file" id="adjuntoChatInput" accept="image/*,video/*,application/pdf" style="font-size: 12px; display: block; margin-top: 2px;">
+        </div>
+        <button onclick="enviarMensajeAlumno()" style="background-color: var(--vino-granate); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;">Enviar Mensaje</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <!-- SECCIÓN MI PROGRESO -->
+    <section id="progreso" class="tab-content">
+      <h2 class="tab-title">Consulta de Progreso Estudiantil</h2>
+      <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecciona el trimestre correspondiente e ingresa el código del alumno.</p>
+      
+      <div class="search-box">
+        <input type="text" id="codigoInput" placeholder="Código del alumno (Ej. 05-4921)">
+        <select id="trimestreFiltro">
+          <option value="1er Trimestre">1er Trimestre</option>
+          <option value="2do Trimestre">2do Trimestre</option>
+          <option value="3er Trimestre">3er Trimestre</option>
+        </select>
+        <button onclick="consultarProgreso()">Buscar Progreso</button>
+      </div>
+
+      <div id="resultadoProgreso" style="display: none;"></div>
+    </section>
+  </div>
+
+<script>
+    const SUPABASE_URL = 'https://imhyumybedzvpzayqfqj.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let codigoChatActual = null; // Variable única para guardar el código activo
+
+    function openTab(tabId, element) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      element.classList.add('active');
+    }
+
+    async function cargarContenidoDinamico() {
+      const { data, error } = await supabaseClient.from('contenido_portal').select('*');
+
+      if (error || !data) return;
+
+      ['escuela', 'anuncios', 'contacto'].forEach(pestana => {
+        const contenedor = document.getElementById(pestana);
+        const elementosPestana = data.filter(d => d.pestana === pestana);
+
+        elementosPestana.forEach(item => {
+          let htmlElemento = `<div class="dynamic-card">`;
+          if (item.titulo) htmlElemento += `<h3 style="color:var(--azul-marino); margin-bottom:10px; font-weight:600;">${item.titulo}</h3>`;
+
+          if (item.tipo === 'texto') {
+            htmlElemento += `<p style="line-height:1.6; color:#334155;">${item.contenido_url}</p>`;
+          } else if (item.tipo === 'imagen') {
+            htmlElemento += `<img src="${item.contenido_url}" style="max-width:100%; height:auto; border-radius:8px; margin-top:8px;">`;
+          } else if (item.tipo === 'youtube') {
+            let videoId = item.contenido_url;
+            if (item.contenido_url.includes('v=')) {
+              videoId = item.contenido_url.split('v=')[1].split('&')[0];
+            } else if (item.contenido_url.includes('youtu.be/')) {
+              videoId = item.contenido_url.split('youtu.be/')[1];
+            }
+            htmlElemento += `<iframe style="width:100%; height:360px; margin-top:10px; border-radius:8px;" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+          } else if (item.tipo === 'enlace') {
+            htmlElemento += `<p><a href="${item.contenido_url}" target="_blank" style="color:var(--vino-granate); font-weight:600; text-decoration:underline;">🔗 Visitar: ${item.contenido_url}</a></p>`;
+          } else if (item.tipo === 'audio') {
+            htmlElemento += `<audio controls style="width:100%; margin-top:10px;"><source src="${item.contenido_url}"></audio>`;
+          }
+
+          htmlElemento += `</div>`;
+          contenedor.innerHTML += htmlElemento;
+        });
+      });
+    }
+
+    async function consultarProgreso() {
+      const codigo = document.getElementById('codigoInput').value.trim();
+      const trimestre = document.getElementById('trimestreFiltro').value;
+      const contenedor = document.getElementById('resultadoProgreso');
+
+      if (!codigo) {
+        alert('Por favor introduce un código de alumno.');
+        return;
+      }
+
+      contenedor.style.display = 'block';
+      contenedor.innerHTML = 'Buscando expediente...';
+
+      const { data: alumno } = await supabaseClient.from('alumnos').select('*').eq('codigo', codigo).single();
+
+      if (!alumno) {
+        contenedor.innerHTML = '<p style="color: var(--vino-granate); font-weight:600;">El código ingresado no corresponde a ningún alumno registrado.</p>';
+        return;
+      }
+
+      const { data: trabajos } = await supabaseClient
+        .from('actividades')
+        .select('*')
+        .eq('alumno_codigo', codigo)
+        .eq('trimestre', trimestre)
+        .order('fecha', { ascending: false });
+
+      let html = `
+        <div class="student-info">
+          <h3 style="color:var(--azul-marino);">Alumno: ${alumno.nombre}</h3>
+          <p style="font-size:13px; color:#475569; margin-top:4px;"><strong>Grupo:</strong> ${alumno.grupo} | <strong>Código:</strong> ${alumno.codigo} | <strong>Consulta:</strong> ${trimestre}</p>
+        </div>
+      `;
+
+      if (trabajos && trabajos.length > 0) {
+        const total = trabajos.length;
+        const entregados = trabajos.filter(t => t.estado === 'Entregado').length;
+        const porcentaje = Math.round((entregados / total) * 100);
+
+        html += `
+          <p style="margin: 12px 0; font-size:14px;"><strong>Desempeño del ${trimestre}:</strong> ${entregados} de ${total} actividades completadas (<strong>${porcentaje}%</strong>)</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Materia / Tarea</th>
+                <th>Estatus</th>
+                <th>Observaciones Docente</th>
+                <th>Recurso</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        trabajos.forEach(t => {
+          let badgeClass = t.estado === 'Entregado' ? 'entregado' : (t.estado === 'En Revisión' ? 'revision' : 'pendiente');
+          let recursoLink = t.url_archivo ? `<a href="${t.url_archivo}" target="_blank" class="btn-recurso">Ver Archivo</a>` : '-';
+          let notas = t.observaciones ? `<span class="obs-text">${t.observaciones}</span>` : 'Sin observaciones';
+
+          html += `
+            <tr>
+              <td>${t.fecha}</td>
+              <td><b>${t.materia}:</b> ${t.titulo}</td>
+              <td><span class="status ${badgeClass}">${t.estado}</span></td>
+              <td>${notas}</td>
+              <td>${recursoLink}</td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table>`;
+      } else {
+        html += `<p style="margin-top: 15px; color:#64748b;">No se registran actividades evaluadas para el ${trimestre}.</p>`;
+      }
+
+      contenedor.innerHTML = html;
+    }
+
+    async function iniciarChatAlumno() {
+      const codigo = document.getElementById('codigoChatInput').value.trim();
+      if (!codigo) { alert('Ingresa tu clave de alumno.'); return; }
+
+      const { data: alumno } = await supabaseClient.from('alumnos').select('*').eq('codigo', codigo).single();
+
+      if (!alumno) {
+        alert('Clave de alumno no encontrada.');
+        return;
+      }
+
+      codigoChatActual = codigo;
+      document.getElementById('chatHeaderAlumno').innerText = `Chat de: ${alumno.nombre} (${alumno.grupo})`;
+      document.getElementById('cajaChat').style.display = 'block';
+      
+      cargarMensajesAlumno();
+      activarChatTiempoRealAlumno();
+    }
+
+    async function cargarMensajesAlumno() {
+      if (!codigoChatActual) return;
+
+      const contenedor = document.getElementById('mensajesAlumnoContenedor') || document.getElementById('mensajesContenedor');
+      if (!contenedor) return;
+
+      const { data: mensajes, error } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .eq('alumno_codigo', codigoChatActual)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error al cargar mensajes:', error);
+        return;
+      }
+
+      if (!mensajes || mensajes.length === 0) {
+        contenedor.innerHTML = '<div style="text-align:center; color:#94a3b8; padding: 20px;">No hay mensajes registrados.</div>';
+        return;
+      }
+
+      let html = '';
+      mensajes.forEach(m => {
+        const esAlumno = m.remitente === 'alumno' || m.remitente === 'tutor';
+        const urlArchivo = m.url_archivo || m.url_adjunto;
+        
+        let contenidoAdjunto = '';
+        if (urlArchivo) {
+          const esImg = urlArchivo.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+          if (esImg) {
+            contenidoAdjunto = `<br><img src="${urlArchivo}" style="max-width:180px; border-radius:6px; margin-top:5px; cursor:pointer;" onclick="window.open('${urlArchivo}')">`;
+          } else {
+            contenidoAdjunto = `<br><a href="${urlArchivo}" target="_blank" style="color:#1a4971; font-weight:bold; font-size:12px;">📎 Ver Archivo</a>`;
+          }
+        }
+
+        html += `
+          <div style="align-self: ${esAlumno ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esAlumno ? '#1a4971' : '#e2e8f0'}; color: ${esAlumno ? '#ffffff' : '#1e293b'}; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;">
+            <small style="display:block; font-size:10px; opacity:0.8;">${esAlumno ? 'Tú' : 'Docente'}</small>
+            <span style="font-size:13px;">${m.mensaje || ''}</span>
+            ${contenidoAdjunto}
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function enviarMensajeAlumno() {
+      if (!codigoChatActual) {
+        alert('Primero ingresa tu clave para acceder al chat.');
+        return;
+      }
+
+      const mensajeText = document.getElementById('textoMensajeInput').value.trim();
+      const archivoInput = document.getElementById('adjuntoChatInput');
+      const archivo = archivoInput ? archivoInput.files[0] : null;
+
+      if (!mensajeText && !archivo) {
+        alert('Escribe un mensaje o selecciona un archivo.');
+        return;
+      }
+
+      let urlAdjunto = null;
+
+      if (archivo) {
+        const fileExt = archivo.name.split('.').pop();
+        const fileName = `chat_${Date.now()}.${fileExt}`;
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivo);
+        
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urlAdjunto = data.publicUrl;
+        }
+      }
+
+      await supabaseClient.from('mensajes_chat').insert([{
+        alumno_codigo: codigoChatActual,
+        remitente: 'alumno',
+        mensaje: mensajeText,
+        url_archivo: urlAdjunto
+      }]);
+
+      if (document.getElementById('textoMensajeInput')) document.getElementById('textoMensajeInput').value = '';
+      if (archivoInput) archivoInput.value = '';
+      
+      cargarMensajesAlumno();
+    }
+
+    function activarChatTiempoRealAlumno() {
+      if (!codigoChatActual) return;
+
+      supabaseClient
+        .channel('chat_alumno_channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: `alumno_codigo=eq.${codigoChatActual}`
+          },
+          () => {
+            cargarMensajesAlumno();
+          }
+        )
+        .subscribe();
+    }
+
+    window.onload = cargarContenidoDinamico;
+  </script>
+</body>
+</html>

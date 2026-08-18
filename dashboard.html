@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Administrativo - Gestión de Contenido</title>
+  <!-- Fuente Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root {
+      --azul-marino: #1a365d;
+      --vino-granate: #722f37;
+      --dorado: #d4af37;
+      --azul-rey: #2b6cb0;
+      --fondo-claro: #f4f6f9;
+      --texto-oscuro: #2d3748;
+      --borde: #cbd5e1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--fondo-claro); color: var(--texto-oscuro); }
+    
+    header { 
+      background: linear-gradient(135deg, var(--azul-marino) 0%, #0f2442 100%); 
+      color: white; 
+      padding: 25px 20px; 
+      text-align: center; 
+      border-bottom: 4px solid var(--dorado);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    header h1 { font-weight: 600; font-size: 24px; letter-spacing: 0.5px; }
+
+    /* LOGIN */
+    .login-container { 
+      max-width: 420px; 
+      margin: 80px auto; 
+      background: white; 
+      padding: 35px 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+      border-top: 5px solid var(--vino-granate);
+    }
+    .login-container h2 {
+      margin-bottom: 20px; 
+      text-align: center; 
+      color: var(--azul-marino);
+      font-weight: 600;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    .main-container { max-width: 1050px; margin: 30px auto; padding: 0 20px; display: none; }
+
+    /* TARJETAS */
+    .card { 
+      background: white; 
+      padding: 25px; 
+      border-radius: 10px; 
+      margin-bottom: 25px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+      border: 1px solid #e2e8f0;
+    }
+    .card h2 { 
+      color: var(--azul-marino); 
+      margin-bottom: 18px; 
+      border-bottom: 2px solid var(--dorado); 
+      padding-bottom: 8px; 
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* FORMULARIOS */
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; color: var(--azul-marino); }
+    .form-group input, .form-group select, .form-group textarea { 
+      width: 100%; 
+      padding: 10px 12px; 
+      border: 1px solid var(--borde); 
+      border-radius: 6px; 
+      font-size: 13px; 
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--azul-rey);
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+    }
+
+    /* BOTONES */
+    .btn { 
+      background-color: var(--azul-marino); 
+      color: white; 
+      border: none; 
+      padding: 10px 20px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 13px; 
+      font-weight: 500; 
+      transition: background 0.2s, transform 0.1s; 
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { background-color: #122540; }
+    .btn:active { transform: scale(0.98); }
+    .btn-success { background-color: var(--vino-granate); }
+    .btn-success:hover { background-color: #542228; }
+    .btn-danger { background-color: #c53030; }
+    .btn-danger:hover { background-color: #9b2c2c; }
+
+    /* TABLAS */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px; }
+    th { background-color: #edf2f7; color: var(--azul-marino); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Gestor de Contenido del Portal</h1>
+  </header>
+
+  <!-- LOGIN DE ADMINISTRADOR -->
+  <div id="loginSection" class="login-container">
+    <h2>Acceso Administrativo</h2>
+    <div class="form-group">
+      <label for="passInput">Contraseña Administrador:</label>
+      <input type="password" id="passInput" placeholder="Introduce clave admin">
+    </div>
+    <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="login()">Ingresar</button>
+  </div>
+
+  <!-- PANEL DE GESTIÓN -->
+  <div id="adminPanel" class="main-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--borde);">
+      <h2 style="font-size: 18px; color: var(--azul-marino); margin: 0; font-weight: 600;">Publicar y Editar Contenido</h2>
+      <button class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <!-- FORMULARIO DE AGREGAR CONTENIDO -->
+    <div class="card">
+      <h2>1. Publicar Nuevo Elemento</h2>
+      <form onsubmit="guardarContenido(event)">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label for="pestanaInput">Pestaña Destino:</label>
+            <select id="pestanaInput">
+              <option value="escuela">La Escuela</option>
+              <option value="anuncios">Anuncios</option>
+              <option value="contacto">Contacto</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label for="tipoInput">Tipo de Elemento:</label>
+            <select id="tipoInput" onchange="cambiarInterfazTipo()">
+              <option value="texto">Texto / Párrafo</option>
+              <option value="imagen">Imagen (Subir archivo)</option>
+              <option value="youtube">Video de YouTube (Enlace)</option>
+              <option value="enlace">Hipervínculo / Web Externa</option>
+              <option value="audio">Música / Audio (Subir MP3)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tituloInput">Título o Encabezado:</label>
+          <input type="text" id="tituloInput" placeholder="Ej. Himno Escolar, Galería de Fotos, Canal de YouTube" required>
+        </div>
+
+        <!-- CAMPO DINÁMICO DE TEXTO O ENLACE -->
+        <div class="form-group" id="grupoTextoUrl">
+          <label id="labelTextoUrl" for="contenidoInput">Texto / Descripción:</label>
+          <textarea id="contenidoInput" rows="3" placeholder="Escribe el texto o pega el enlace aquí..."></textarea>
+        </div>
+
+        <!-- CAMPO DINÁMICO PARA ARCHIVOS (IMAGEN/AUDIO) -->
+        <div class="form-group" id="grupoArchivo" style="display: none;">
+          <label id="labelArchivo" for="archivoInput">Seleccionar Archivo:</label>
+          <input type="file" id="archivoInput">
+        </div>
+
+        <button type="submit" class="btn btn-success">Publicar en el Portal</button>
+      </form>
+    </div>
+
+    <!-- LISTADO DE ELEMENTOS PUBLICADOS CON OPCIÓN DE ELIMINAR -->
+    <div class="card">
+      <h2>2. Elementos Activos en el Portal</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Pestaña</th>
+              <th>Tipo</th>
+              <th>Título</th>
+              <th>Detalle / URL</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaContenido">
+            <!-- Carga dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://imhyumybedzvpzayqfqj.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const CLAVE_ADMIN = 'admin123';
+
+    function login() {
+      if (document.getElementById('passInput').value === CLAVE_ADMIN) {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        cargarContenido();
+      } else { alert('Contraseña administrativa incorrecta'); }
+    }
+
+    function logout() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('passInput').value = '';
+    }
+
+    function cambiarInterfazTipo() {
+      const tipo = document.getElementById('tipoInput').value;
+      const grupoTextoUrl = document.getElementById('grupoTextoUrl');
+      const grupoArchivo = document.getElementById('grupoArchivo');
+      const labelTextoUrl = document.getElementById('labelTextoUrl');
+
+      if (tipo === 'imagen' || tipo === 'audio') {
+        grupoArchivo.style.display = 'block';
+        grupoTextoUrl.style.display = 'none';
+      } else {
+        grupoArchivo.style.display = 'none';
+        grupoTextoUrl.style.display = 'block';
+        if (tipo === 'youtube') labelTextoUrl.innerText = 'URL del Video de YouTube:';
+        else if (tipo === 'enlace') labelTextoUrl.innerText = 'Enlace Web (URL):';
+        else labelTextoUrl.innerText = 'Texto / Contenido:';
+      }
+    }
+
+    async function guardarContenido(e) {
+      e.preventDefault();
+      const pestana = document.getElementById('pestanaInput').value;
+      const tipo = document.getElementById('tipoInput').value;
+      const titulo = document.getElementById('tituloInput').value.trim();
+      let valorFinal = document.getElementById('contenidoInput').value.trim();
+
+      if (tipo === 'imagen' || tipo === 'audio') {
+        const file = document.getElementById('archivoInput').files[0];
+        if (!file) { alert('Por favor selecciona un archivo.'); return; }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, file);
+        
+        if (uploadErr) { alert('Error al subir archivo: ' + uploadErr.message); return; }
+        const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+        valorFinal = data.publicUrl;
+      }
+
+      const { error } = await supabaseClient.from('contenido_portal').insert([{
+        pestana: pestana,
+        tipo: tipo,
+        titulo: titulo,
+        contenido_url: valorFinal
+      }]);
+
+      if (error) { alert('Error al guardar: ' + error.message); }
+      else {
+        alert('Elemento publicado con éxito.');
+        e.target.reset();
+        cambiarInterfazTipo();
+        cargarContenido();
+      }
+    }
+
+    async function cargarContenido() {
+      const tbody = document.getElementById('tablaContenido');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
+
+      const { data, error } = await supabaseClient.from('contenido_portal').select('*').order('id', { ascending: false });
+
+      if (error || !data) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Sin elementos cargados.</td></tr>'; return; }
+
+      let html = '';
+      data.forEach(item => {
+        html += `
+          <tr>
+            <td><b style="color: var(--azul-marino);">${item.pestana.toUpperCase()}</b></td>
+            <td>${item.tipo}</td>
+            <td>${item.titulo}</td>
+            <td><small style="color: #718096;">${item.contenido_url.substring(0, 40)}...</small></td>
+            <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarElemento(${item.id})">Eliminar</button></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    async function eliminarElemento(id) {
+      if (confirm('¿Deseas eliminar este elemento del portal?')) {
+        await supabaseClient.from('contenido_portal').delete().eq('id', id);
+        cargarContenido();
+      }
+    }
+  </script>
+</body>
+</html>
