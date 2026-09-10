@@ -236,7 +236,7 @@
       const grupoArchivo = document.getElementById('grupoArchivo');
       const labelTextoUrl = document.getElementById('labelTextoUrl');
 
-      if (tipo === 'imagen' || tipo === 'audio') {
+      if (tipo === 'imagen' || tipo === 'audio' || tipo === 'pdf') {
         grupoArchivo.style.display = 'block';
         grupoTextoUrl.style.display = 'none';
       } else {
@@ -255,7 +255,7 @@
       const titulo = document.getElementById('tituloInput').value.trim();
       let valorFinal = document.getElementById('contenidoInput').value.trim();
 
-      if (tipo === 'imagen' || tipo === 'audio') {
+      if (tipo === 'imagen' || tipo === 'audio'|| tipo === 'pdf') {
         const file = document.getElementById('archivoInput').files[0];
         if (!file) { alert('Por favor selecciona un archivo.'); return; }
 
