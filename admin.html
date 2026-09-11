@@ -516,7 +516,7 @@
 
         if (actAlumno.length > 0) {
           const ultAct = actAlumno[0];
-          const estatusActual = ultAct.estado || ultAct.estatus || 'Pendiente';
+          const estatusActual = ultAct.estado || 'Pendiente';
 
           // SI YA ESTÁ ENTREGADO, SE OMITE DE LA TABLA PENDIENTE
           if (estatusActual === 'Entregado') return;
@@ -545,14 +545,17 @@
       tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas pendientes en este trimestre.</td></tr>';
     }
 
-    // GUARDAR Y OCULTAR AUTOMÁTICAMENTE
+    // GUARDAR Y OCULTAR AUTOMÁTICAMENTE (CORREGIDO ERROR DE COLUMNA 'ESTATUS')
     async function actualizarTarea(id) {
       const nuevoEstado = document.getElementById(`estatus-${id}`).value;
       const nuevaObs = document.getElementById(`obs-${id}`).value;
 
       const { error } = await supabaseClient
         .from('actividades')
-        .update({ estado: nuevoEstado, estatus: nuevoEstado, observaciones: nuevaObs })
+        .update({ 
+          estado: nuevoEstado, 
+          observaciones: nuevaObs 
+        })
         .eq('id', id);
 
       if (error) {
