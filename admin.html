@@ -532,7 +532,7 @@ alumnos.forEach(al => {
                 </td>
                 <td>
                     <button class="btn btn-sm btn-primary" onclick="actualizarTarea('${ultAct.id}')">Guardar</button>
-               </td>
+                </td>
             </tr>
         `;
     }
@@ -540,23 +540,22 @@ alumnos.forEach(al => {
 
 tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">¡Excelente! No hay tareas pendientes por revisar.</td></tr>';
 
-    async function actualizarTarea(id) {
-      const nuevoEstado = document.getElementById(`estatus-${id}`).value;
-      const nuevaObs = document.getElementById(`obs-${id}`).value;
+async function actualizarTarea(id) {
+    const nuevoEstado = document.getElementById(`estatus-${id}`).value;
+    const nuevaObs = document.getElementById(`obs-${id}`).value;
 
-      const { error } = await supabaseClient
+    const { error } = await supabaseClient
         .from('actividades')
         .update({ estatus: nuevoEstado, observaciones: nuevaObs })
         .eq('id', id);
 
-      if (error) {
+    if (error) {
         alert('Error al actualizar: ' + error.message);
-      } else {
+    } else {
         cargarAlumnosDelGrupo();
         alert('Calificación guardada correctamente.');
-      }
     }
-
+}
     // BANDEJA DE MENSAJES Y CHAT
     async function cargarBandejaMensajesDocente() {
       if (!grupoSesion) return;
