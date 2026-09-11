@@ -310,7 +310,7 @@
             <thead>
               <tr>
                 <th>Alumno</th>
-                <th>Última Actividad</th>
+                <th>Actividad Asignada</th>
                 <th>Estatus</th>
                 <th>Observaciones Individuales</th>
                 <th>Guardar</th>
@@ -380,6 +380,7 @@
     let grupoSesion = null;
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
+    let cacheActividadesPorAlumno = {};
 
     // INICIO DE SESIÓN
     function login() {
@@ -494,7 +495,7 @@
       }
     }
 
-    // CARGAR ALUMNOS (FILTRA Y OCULTA LOS "ENTREGADO")
+    // CARGAR ALUMNOS CON SELECTOR DE ACTIVIDAD Y FILTRO DE COMPLETADAS
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -510,32 +511,49 @@
         return;
       }
 
+      cacheActividadesPorAlumno = {};
       let html = '';
+
       alumnos.forEach(al => {
+        // Filtrar actividades del alumno en el trimestre
         const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
 
-        if (actAlumno.length > 0) {
-          const ultAct = actAlumno[0];
-          const estatusActual = ultAct.estado || 'Pendiente';
+        // De las actividades, filtramos solo las que estén 'Pendientes'
+        const actPendientes = actAlumno.filter(a => (a.estado || 'Pendiente') !== 'Entregado');
 
-          // SI YA ESTÁ ENTREGADO, SE OMITE DE LA TABLA PENDIENTE
-          if (estatusActual === 'Entregado') return;
+        if (actPendientes.length > 0) {
+          cacheActividadesPorAlumno[al.codigo] = actPendientes;
+
+          // Primera actividad pendiente por defecto
+          const actividadInicial = actPendientes[0];
+
+          // Generar opciones para el selector de actividades
+          let opcionesActividades = actPendientes.map(act => 
+            `<option value="${act.id}">${act.titulo || act.materia || 'Tarea Asignada'}</option>`
+          ).join('');
 
           html += `
-            <tr>
-              <td><strong>${al.nombre}</strong><br><small style="color:#64748b;">${al.codigo}</small></td>
-              <td>${ultAct.titulo || ultAct.materia || 'Tarea Asignada'}</td>
+            <tr id="fila-alumno-${al.codigo}">
               <td>
-                <select id="estatus-${ultAct.id}" style="padding:4px; border-radius:4px;">
-                  <option value="Pendiente" ${estatusActual === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                  <option value="Entregado" ${estatusActual === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                <strong>${al.nombre}</strong><br>
+                <small style="color:#64748b;">${al.codigo}</small>
+              </td>
+              <td>
+                <select id="select-actividad-${al.codigo}" onchange="cambiarActividadSeleccionada('${al.codigo}')" style="padding:5px; border-radius:4px; max-width:200px; width:100%;">
+                  ${opcionesActividades}
                 </select>
               </td>
               <td>
-                <input type="text" id="obs-${ultAct.id}" value="${ultAct.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:4px;">
+                <select id="estatus-${al.codigo}" style="padding:4px; border-radius:4px;">
+                  <option value="Pendiente" ${actividadInicial.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                  <option value="Entregado" ${actividadInicial.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                </select>
               </td>
               <td>
-                <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTarea('${ultAct.id}')">Guardar</button>
+                <input type="text" id="obs-${al.codigo}" value="${actividadInicial.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:4px;">
+              </td>
+              <td>
+                <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTarea('${al.codigo}')">Guardar</button>
               </td>
             </tr>
           `;
@@ -545,10 +563,23 @@
       tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas pendientes en este trimestre.</td></tr>';
     }
 
-    // GUARDAR Y OCULTAR AUTOMÁTICAMENTE (CORREGIDO ERROR DE COLUMNA 'ESTATUS')
-    async function actualizarTarea(id) {
-      const nuevoEstado = document.getElementById(`estatus-${id}`).value;
-      const nuevaObs = document.getElementById(`obs-${id}`).value;
+    // CAMBIAR DATOS VISUALES AL SELECCIONAR OTRA TAREA EN EL DESPLEGABLE
+    function cambiarActividadSeleccionada(codigoAlumno) {
+      const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
+      const listaActividades = cacheActividadesPorAlumno[codigoAlumno];
+      const actividadObj = listaActividades.find(a => a.id == idActividad);
+
+      if (actividadObj) {
+        document.getElementById(`estatus-${codigoAlumno}`).value = actividadObj.estado || 'Pendiente';
+        document.getElementById(`obs-${codigoAlumno}`).value = actividadObj.observaciones || '';
+      }
+    }
+
+    // GUARDAR LA ACTIVIDAD SELECCIONADA EN SUPABASE
+    async function actualizarTarea(codigoAlumno) {
+      const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
+      const nuevoEstado = document.getElementById(`estatus-${codigoAlumno}`).value;
+      const nuevaObs = document.getElementById(`obs-${codigoAlumno}`).value;
 
       const { error } = await supabaseClient
         .from('actividades')
@@ -556,13 +587,13 @@
           estado: nuevoEstado, 
           observaciones: nuevaObs 
         })
-        .eq('id', id);
+        .eq('id', idActividad);
 
       if (error) {
         alert('Error al actualizar: ' + error.message);
       } else {
         alert('Calificación guardada correctamente.');
-        // Recarga la tabla para que el alumno calificado desaparezca de la vista actual
+        // Recargar la lista para actualizar selectores y ocultar si fue "Entregado"
         cargarAlumnosDelGrupo();
       }
     }
