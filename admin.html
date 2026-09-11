@@ -501,56 +501,58 @@
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando alumnos...</td></tr>';
 
       const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
-      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre);
+      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre).eq('estatus', 'Pendiente');
 
       if (!alumnos || alumnos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron alumnos en el grupo ' + grupoSesion + '</td></tr>';
         return;
       }
 
-      let html = '';
-      alumnos.forEach(al => {
-        const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
-        const ultAct = actAlumno.length > 0 ? actAlumno[0] : null;
+     let html = '';
+alumnos.forEach(al => {
+    // Busca las tareas pendientes del alumno
+    const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
 
+    // Solo si tiene tareas pendientes dibujamos la fila
+    if (actAlumno.length > 0) {
+        const ultAct = actAlumno[0]; // Toma la tarea pendiente
+        
         html += `
-          <tr>
-            <td><strong>${al.nombre}</strong><br><small style="color:#718096;">${al.codigo}</small></td>
-            <td>${ultAct ? ultAct.titulo : 'Sin tareas'}</td>
-            <td>
-              ${ultAct ? `
-                <select id="est_${ultAct.id}" style="padding: 4px; border-radius: 4px; border: 1px solid var(--borde);">
-                  <option value="Pendiente" ${ultAct.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                  <option value="Entregado" ${ultAct.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
-                  <option value="En Revisión" ${ultAct.estado === 'En Revisión' ? 'selected' : ''}>En Revisión</option>
-                </select>
-              ` : '-'}
-            </td>
-            <td>
-              ${ultAct ? `<input type="text" id="obs_${ultAct.id}" value="${ultAct.observaciones || ''}" placeholder="Agregar nota..." style="padding: 4px; width: 100%;">` : '-'}
-            </td>
-            <td>
-              ${ultAct ? `<button class="btn btn-success" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTarea(${ultAct.id})">Guardar</button>` : '-'}
-            </td>
-          </tr>
+            <tr>
+                <td><strong>${al.nombre}</strong><br><small style="color:#64748b;">${al.codigo}</small></td>
+                <td>${ultAct.titulo_tarea || ultAct.materia || 'Tarea Pendiente'}</td>
+                <td>
+                    <select id="estatus-${ultAct.id}" class="form-control" style="padding:4px; border-radius:4px;">
+                        <option value="Pendiente" ${ultAct.estatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Entregado" ${ultAct.estatus === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" id="obs-${ultAct.id}" value="${ultAct.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:4px;">
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="actualizarTarea('${ultAct.id}')">Guardar</button>
+                </td>
+            </tr>
         `;
-      });
-
-      tbody.innerHTML = html;
     }
+});
+
+tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">¡Excelente! No hay tareas pendientes por revisar.</td></tr>';
 
     async function actualizarTarea(id) {
-      const nuevoEstado = document.getElementById(`est_${id}`).value;
-      const nuevaObs = document.getElementById(`obs_${id}`).value;
+      const nuevoEstado = document.getElementById(`estatus-${id}`).value;
+      const nuevaObs = document.getElementById(`obs-${id}`).value;
 
       const { error } = await supabaseClient
         .from('actividades')
-        .update({ estado: nuevoEstado, observaciones: nuevaObs })
+        .update({ estatus: nuevoEstado, observaciones: nuevaObs })
         .eq('id', id);
 
       if (error) {
         alert('Error al actualizar: ' + error.message);
       } else {
+        cargarAlumnosDelGrupo();
         alert('Calificación guardada correctamente.');
       }
     }
