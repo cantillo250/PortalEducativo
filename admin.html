@@ -494,6 +494,7 @@
       }
     }
 
+    // CARGAR ALUMNOS (FILTRA Y OCULTA LOS "ENTREGADO")
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -516,7 +517,10 @@
         if (actAlumno.length > 0) {
           const ultAct = actAlumno[0];
           const estatusActual = ultAct.estado || ultAct.estatus || 'Pendiente';
-          
+
+          // SI YA ESTÁ ENTREGADO, SE OMITE DE LA TABLA PENDIENTE
+          if (estatusActual === 'Entregado') return;
+
           html += `
             <tr>
               <td><strong>${al.nombre}</strong><br><small style="color:#64748b;">${al.codigo}</small></td>
@@ -538,9 +542,10 @@
         }
       });
 
-      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas registradas para este trimestre.</td></tr>';
+      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas pendientes en este trimestre.</td></tr>';
     }
 
+    // GUARDAR Y OCULTAR AUTOMÁTICAMENTE
     async function actualizarTarea(id) {
       const nuevoEstado = document.getElementById(`estatus-${id}`).value;
       const nuevaObs = document.getElementById(`obs-${id}`).value;
@@ -553,8 +558,9 @@
       if (error) {
         alert('Error al actualizar: ' + error.message);
       } else {
-        cargarAlumnosDelGrupo();
         alert('Calificación guardada correctamente.');
+        // Recarga la tabla para que el alumno calificado desaparezca de la vista actual
+        cargarAlumnosDelGrupo();
       }
     }
 
