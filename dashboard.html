@@ -119,9 +119,9 @@
       gap: 10px;
       margin-top: 10px;
     }
-    .preview-container img {
-      width: 80px;
-      height: 80px;
+    .preview-container img, .preview-container video {
+      width: 100px;
+      height: 100px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid var(--borde);
@@ -132,8 +132,8 @@
       flex-wrap: wrap;
     }
     .table-thumb {
-      width: 45px;
-      height: 45px;
+      width: 50px;
+      height: 50px;
       object-fit: cover;
       border-radius: 4px;
       border: 1px solid var(--borde);
@@ -187,6 +187,7 @@
             <select id="tipoInput" onchange="cambiarInterfazTipo()">
               <option value="texto">Texto / Párrafo</option>
               <option value="imagen">Imágenes (Subir una o varias)</option>
+              <option value="video">Video Local (Subir MP4, WEBM)</option>
               <option value="youtube">Video de YouTube (Enlace)</option>
               <option value="enlace">Hipervínculo / Web Externa</option>
               <option value="audio">Música / Audio (Subir MP3)</option>
@@ -205,11 +206,11 @@
           <textarea id="contenidoInput" rows="3" placeholder="Escribe el texto o pega el enlace aquí..."></textarea>
         </div>
 
-        <!-- CAMPO DINÁMICO PARA ARCHIVOS (SOPORTA MÚLTIPLES ARCHIVOS) -->
+        <!-- CAMPO DINÁMICO PARA ARCHIVOS (IMÁGENES / VIDEOS / AUDIO) -->
         <div class="form-group" id="grupoArchivo" style="display: none;">
           <label id="labelArchivo" for="archivoInput">Seleccionar Archivo(s):</label>
-          <input type="file" id="archivoInput" accept="image/*,audio/*,application/pdf" multiple onchange="previsualizarArchivos(this)">
-          <small style="font-size: 11px; color: #718096; display: block; margin-top: 4px;">Sostén Ctrl (Windows) o Cmd (Mac) para seleccionar varias imágenes a la vez.</small>
+          <input type="file" id="archivoInput" accept="image/*,video/*,audio/*,application/pdf" multiple onchange="previsualizarArchivos(this)">
+          <small style="font-size: 11px; color: #718096; display: block; margin-top: 4px;">Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples archivos.</small>
           <div id="galeriaPreviaAdmin" class="preview-container"></div>
         </div>
 
@@ -269,7 +270,7 @@
       
       galeriaPrevia.innerHTML = '';
 
-      if (tipo === 'imagen' || tipo === 'audio' || tipo === 'pdf') {
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'pdf') {
         grupoArchivo.style.display = 'block';
         grupoTextoUrl.style.display = 'none';
       } else {
@@ -293,6 +294,11 @@
           const img = document.createElement('img');
           img.src = URL.createObjectURL(archivo);
           contenedor.appendChild(img);
+        } else if (archivo.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(archivo);
+          video.controls = true;
+          contenedor.appendChild(video);
         }
       });
     }
@@ -304,7 +310,7 @@
       const titulo = document.getElementById('tituloInput').value.trim();
       let valorFinal = document.getElementById('contenidoInput').value.trim();
 
-      if (tipo === 'imagen' || tipo === 'audio' || tipo === 'pdf') {
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'pdf') {
         const files = document.getElementById('archivoInput').files;
         if (!files || files.length === 0) { alert('Por favor selecciona al menos un archivo.'); return; }
 
@@ -324,7 +330,6 @@
           urlsGuardadas.push(data.publicUrl);
         }
 
-        // Si son múltiples archivos, los guardamos separados por coma
         valorFinal = urlsGuardadas.join(',');
       }
 
@@ -366,6 +371,13 @@
           detalleHtml = '<div class="table-thumb-container">';
           urls.forEach(u => {
             detalleHtml += `<img src="${u}" class="table-thumb" onclick="window.open('${u}', '_blank')">`;
+          });
+          detalleHtml += '</div>';
+        } else if (item.tipo === 'video') {
+          const urls = item.contenido_url.split(',');
+          detalleHtml = '<div class="table-thumb-container">';
+          urls.forEach(u => {
+            detalleHtml += `<video src="${u}" class="table-thumb" onclick="window.open('${u}', '_blank')"></video>`;
           });
           detalleHtml += '</div>';
         } else {
