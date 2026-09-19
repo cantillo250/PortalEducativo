@@ -284,9 +284,11 @@
             <textarea id="observacionesInput" rows="2" placeholder="Ej. Entregar en formato PDF o libreta..."></textarea>
           </div>
 
+          <!-- SELECCIÓN MÚLTIPLE DE ARCHIVOS -->
           <div class="form-group">
-            <label for="archivoInput">Adjuntar Material (PDF/Imagen):</label>
-            <input type="file" id="archivoInput" accept="image/*,application/pdf">
+            <label for="archivoInput">Adjuntar Materiales (PDF/Imágenes/Videos):</label>
+            <input type="file" id="archivoInput" accept="image/*,video/*,application/pdf" multiple>
+            <small style="color: #718096; display: block; margin-top: 4px;">Puedes seleccionar más de un archivo usando Ctrl o Shift.</small>
           </div>
 
           <button type="submit" class="btn btn-success">Asignar Tarea a Mi Grupo</button>
@@ -357,7 +359,8 @@
               
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
-                  <input type="file" id="adjuntoDocenteInput" accept="image/*,video/*,application/pdf" style="font-size: 12px;">
+                  <!-- SELECCIÓN MÚLTIPLE DE ARCHIVOS EN CHAT -->
+                  <input type="file" id="adjuntoDocenteInput" accept="image/*,video/*,application/pdf" multiple style="font-size: 12px;">
                 </div>
                 <button class="btn btn-success" onclick="enviarRespuestaDocente()">Enviar Respuesta</button>
               </div>
@@ -444,6 +447,24 @@
       }
     }
 
+    // FUNCIÓN PARA SUBIR MÚLTIPLES ARCHIVOS Y OBTENER SUS URLS
+    async function subirArchivosMultiples(archivos) {
+      if (!archivos || archivos.length === 0) return null;
+      
+      const urls = [];
+      for (let file of archivos) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, file);
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urls.push(data.publicUrl);
+        }
+      }
+      return urls.length > 0 ? urls.join(',') : null;
+    }
+
     // GESTIÓN ACADÉMICA
     async function crearTareaParaGrupo(e) {
       e.preventDefault();
@@ -453,7 +474,7 @@
       const titulo = document.getElementById('tituloInput').value.trim();
       const fecha = document.getElementById('fechaInput').value;
       const observaciones = document.getElementById('observacionesInput').value.trim();
-      const archivoFile = document.getElementById('archivoInput').files[0];
+      const archivosFiles = document.getElementById('archivoInput').files;
 
       const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupo);
 
@@ -462,16 +483,8 @@
         return;
       }
 
-      let urlArchivo = null;
-      if (archivoFile) {
-        const fileExt = archivoFile.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivoFile);
-        if (!uploadErr) {
-          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
-          urlArchivo = data.publicUrl;
-        }
-      }
+      // Subida de múltiples archivos
+      const urlArchivo = await subirArchivosMultiples(archivosFiles);
 
       const registros = alumnos.map(al => ({
         alumno_codigo: al.codigo,
@@ -495,7 +508,7 @@
       }
     }
 
-    // CARGAR ALUMNOS CON SELECTOR DE ACTIVIDAD Y FILTRO DE COMPLETADAS
+    // CARGAR ALUMNOS CON SELECTOR DE ACTIVIDAD Y ESTATUS "NO ENTREGADO"
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -515,23 +528,21 @@
       let html = '';
 
       alumnos.forEach(al => {
-        // Filtrar actividades del alumno en el trimestre
         const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
 
-        // De las actividades, filtramos solo las que estén 'Pendientes'
+        // Muestra actividades que estén pendientes o marcadas como No Entregado
         const actPendientes = actAlumno.filter(a => (a.estado || 'Pendiente') !== 'Entregado');
 
         if (actPendientes.length > 0) {
           cacheActividadesPorAlumno[al.codigo] = actPendientes;
 
-          // Primera actividad pendiente por defecto
           const actividadInicial = actPendientes[0];
 
-          // Generar opciones para el selector de actividades
           let opcionesActividades = actPendientes.map(act => 
             `<option value="${act.id}">${act.titulo || act.materia || 'Tarea Asignada'}</option>`
           ).join('');
 
+          // SE AÑADIÓ LA OPCIÓN "NO ENTREGADO" EN EL SELECT
           html += `
             <tr id="fila-alumno-${al.codigo}">
               <td>
@@ -547,6 +558,7 @@
                 <select id="estatus-${al.codigo}" style="padding:4px; border-radius:4px;">
                   <option value="Pendiente" ${actividadInicial.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                   <option value="Entregado" ${actividadInicial.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                  <option value="No Entregado" ${actividadInicial.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
                 </select>
               </td>
               <td>
@@ -563,7 +575,6 @@
       tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas pendientes en este trimestre.</td></tr>';
     }
 
-    // CAMBIAR DATOS VISUALES AL SELECCIONAR OTRA TAREA EN EL DESPLEGABLE
     function cambiarActividadSeleccionada(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const listaActividades = cacheActividadesPorAlumno[codigoAlumno];
@@ -575,7 +586,6 @@
       }
     }
 
-    // GUARDAR LA ACTIVIDAD SELECCIONADA EN SUPABASE
     async function actualizarTarea(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const nuevoEstado = document.getElementById(`estatus-${codigoAlumno}`).value;
@@ -593,7 +603,6 @@
         alert('Error al actualizar: ' + error.message);
       } else {
         alert('Calificación guardada correctamente.');
-        // Recargar la lista para actualizar selectores y ocultar si fue "Entregado"
         cargarAlumnosDelGrupo();
       }
     }
@@ -712,6 +721,7 @@
       cargarMensajesDocente();
     }
 
+    // CARGAR Y VISUALIZAR MÚLTIPLES ARCHIVOS ADJUNTOS EN EL CHAT
     async function cargarMensajesDocente() {
       if (!codigoChatDocenteActual) return;
 
@@ -739,12 +749,19 @@
         
         let contenidoAdjunto = '';
         if (m.url_archivo) {
-          const esImg = m.url_archivo.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-          if (esImg) {
-            contenidoAdjunto = `<br><img src="${m.url_archivo}" style="max-width:200px; border-radius:6px; margin-top:6px; cursor:pointer;" onclick="window.open('${m.url_archivo}')">`;
-          } else {
-            contenidoAdjunto = `<br><a href="${m.url_archivo}" target="_blank" style="color:${esDocente ? '#d4af37' : '#2b6cb0'}; font-weight:600; font-size:12px;">📎 Ver Archivo Adjunto</a>`;
-          }
+          const urls = m.url_archivo.split(',');
+          urls.forEach(url => {
+            const esImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            const esVid = url.match(/\.(mp4|webm|ogg|mov)$/i);
+
+            if (esImg) {
+              contenidoAdjunto += `<br><img src="${url}" style="max-width:200px; border-radius:6px; margin-top:6px; cursor:pointer;" onclick="window.open('${url}')">`;
+            } else if (esVid) {
+              contenidoAdjunto += `<br><video src="${url}" controls style="max-width:220px; border-radius:6px; margin-top:6px;"></video>`;
+            } else {
+              contenidoAdjunto += `<br><a href="${url}" target="_blank" style="color:${esDocente ? '#d4af37' : '#2b6cb0'}; font-weight:600; font-size:12px;">📎 Ver Archivo Adjunto</a>`;
+            }
+          });
         }
 
         html += `
@@ -760,13 +777,14 @@
       contenedor.scrollTop = contenedor.scrollHeight;
     }
 
+    // ENVIAR RESPUESTA CON SOPORTE PARA MÚLTIPLES ADJUNTOS
     async function enviarRespuestaDocente() {
       const textoInput = document.getElementById('textoDocenteInput');
       const archivoInput = document.getElementById('adjuntoDocenteInput');
       const mensaje = textoInput.value.trim();
-      const archivoFile = archivoInput.files[0];
+      const archivosFiles = archivoInput.files;
 
-      if (!mensaje && !archivoFile) {
+      if (!mensaje && archivosFiles.length === 0) {
         alert('Escribe un mensaje o adjunta un archivo.');
         return;
       }
@@ -776,27 +794,17 @@
         return;
       }
 
-      let urlArchivo = null;
-      if (archivoFile) {
-        const fileExt = archivoFile.name.split('.').pop();
-        const fileName = `chat_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivoFile);
-        
-        if (!uploadErr) {
-          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
-          urlArchivo = data.publicUrl;
-        }
-      }
+      const urlArchivo = await subirArchivosMultiples(archivosFiles);
 
-      const { error } = await supabaseClient.from('mensajes_chat').insert([{
+      const { error } = await supabaseClient.from('mensajes_chat').insert({
         alumno_codigo: codigoChatDocenteActual,
         remitente: 'docente',
         mensaje: mensaje,
         url_archivo: urlArchivo
-      }]);
+      });
 
       if (error) {
-        alert('Error al enviar mensaje: ' + error.message);
+        alert('Error al enviar el mensaje: ' + error.message);
       } else {
         textoInput.value = '';
         archivoInput.value = '';
