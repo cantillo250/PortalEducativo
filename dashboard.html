@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sección de Anuncios</title>
+  <title>Panel Administrativo - Gestión de Contenido</title>
   <!-- Fuente Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  
   <style>
     :root {
       --azul-marino: #1a365d;
       --vino-granate: #722f37;
       --dorado: #d4af37;
+      --azul-rey: #2b6cb0;
       --fondo-claro: #f4f6f9;
       --texto-oscuro: #2d3748;
       --borde: #cbd5e1;
@@ -23,132 +23,220 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
     body { background-color: var(--fondo-claro); color: var(--texto-oscuro); }
-
-    header {
-      background: linear-gradient(135deg, var(--azul-marino) 0%, #0f2442 100%);
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
+    
+    header { 
+      background: linear-gradient(135deg, var(--azul-marino) 0%, #0f2442 100%); 
+      color: white; 
+      padding: 25px 20px; 
+      text-align: center; 
       border-bottom: 4px solid var(--dorado);
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
-    header h1 { font-weight: 600; font-size: 26px; }
+    header h1 { font-weight: 600; font-size: 24px; letter-spacing: 0.5px; }
 
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      padding: 0 20px;
+    /* LOGIN */
+    .login-container { 
+      max-width: 420px; 
+      margin: 80px auto; 
+      background: white; 
+      padding: 35px 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+      border-top: 5px solid var(--vino-granate);
     }
-
-    .anuncio-card {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-      border: 1px solid var(--borde);
-      border-top: 4px solid var(--vino-granate);
-    }
-
-    .anuncio-card h2 {
+    .login-container h2 {
+      margin-bottom: 20px; 
+      text-align: center; 
       color: var(--azul-marino);
-      font-size: 20px;
-      margin-bottom: 12px;
       font-weight: 600;
     }
 
-    .anuncio-card p {
-      font-size: 15px;
-      line-height: 1.6;
-      color: var(--texto-oscuro);
+    /* CONTENEDOR PRINCIPAL */
+    .main-container { max-width: 1050px; margin: 30px auto; padding: 0 20px; display: none; }
+
+    /* TARJETAS */
+    .card { 
+      background: white; 
+      padding: 25px; 
+      border-radius: 10px; 
+      margin-bottom: 25px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+      border: 1px solid #e2e8f0;
+    }
+    .card h2 { 
+      color: var(--azul-marino); 
+      margin-bottom: 18px; 
+      border-bottom: 2px solid var(--dorado); 
+      padding-bottom: 8px; 
+      font-size: 18px;
+      font-weight: 600;
     }
 
-    /* GALERÍA DE IMÁGENES */
-    .galeria-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-top: 15px;
+    /* FORMULARIOS */
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; color: var(--azul-marino); }
+    .form-group input, .form-group select, .form-group textarea { 
+      width: 100%; 
+      padding: 10px 12px; 
+      border: 1px solid var(--borde); 
+      border-radius: 6px; 
+      font-size: 13px; 
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--azul-rey);
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
     }
 
-    .galeria-grid img {
-      width: 100%;
-      height: 180px;
+    /* BOTONES */
+    .btn { 
+      background-color: var(--azul-marino); 
+      color: white; 
+      border: none; 
+      padding: 10px 20px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 13px; 
+      font-weight: 500; 
+      transition: background 0.2s, transform 0.1s; 
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { background-color: #122540; }
+    .btn:active { transform: scale(0.98); }
+    .btn-success { background-color: var(--vino-granate); }
+    .btn-success:hover { background-color: #542228; }
+    .btn-danger { background-color: #c53030; }
+    .btn-danger:hover { background-color: #9b2c2c; }
+
+    /* GALERÍA DE PREVISUALIZACIÓN Y VISTA DE TABLA */
+    .preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .preview-container img, .preview-container video {
+      width: 100px;
+      height: 100px;
       object-fit: cover;
-      border-radius: 8px;
+      border-radius: 6px;
       border: 1px solid var(--borde);
-      transition: transform 0.2s;
+    }
+    .table-thumb-container {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .table-thumb {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--borde);
       cursor: pointer;
     }
 
-    .galeria-grid img:hover {
-      transform: scale(1.02);
-    }
-
-    /* VIDEOS Y AUDIOS */
-    .video-container {
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    video, audio {
-      width: 100%;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    video {
-      max-height: 450px;
-      background-color: #000;
-    }
-
-    /* ENLACES Y YOUTUBE */
-    .iframe-youtube {
-      width: 100%;
-      height: 400px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 15px;
-    }
-
-    .enlace-btn {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 18px;
-      background-color: var(--azul-marino);
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 500;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-
-    .enlace-btn:hover {
-      background-color: #122540;
-    }
-
-    .estado-vacio {
-      text-align: center;
-      padding: 40px;
-      background: white;
-      border-radius: 10px;
-      border: 1px solid var(--borde);
-      color: #718096;
-    }
+    /* TABLAS */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px; vertical-align: middle; }
+    th { background-color: #edf2f7; color: var(--azul-marino); font-weight: 600; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Anuncios e Información General</h1>
+    <h1>Gestor de Contenido del Portal</h1>
   </header>
 
-  <div class="container">
-    <div id="contenedorAnuncios">
-      <div class="estado-vacio">Cargando anuncios...</div>
+  <!-- LOGIN DE ADMINISTRADOR -->
+  <div id="loginSection" class="login-container">
+    <h2>Acceso Administrativo</h2>
+    <div class="form-group">
+      <label for="passInput">Contraseña Administrador:</label>
+      <input type="password" id="passInput" placeholder="Introduce clave admin">
+    </div>
+    <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="login()">Ingresar</button>
+  </div>
+
+  <!-- PANEL DE GESTIÓN -->
+  <div id="adminPanel" class="main-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--borde);">
+      <h2 style="font-size: 18px; color: var(--azul-marino); margin: 0; font-weight: 600;">Publicar y Editar Contenido</h2>
+      <button class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <!-- FORMULARIO DE AGREGAR CONTENIDO -->
+    <div class="card">
+      <h2>1. Publicar Nuevo Elemento</h2>
+      <form onsubmit="guardarContenido(event)">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label for="pestanaInput">Pestaña Destino:</label>
+            <select id="pestanaInput">
+              <option value="anuncios" selected>Anuncios</option>
+              <option value="escuela">La Escuela</option>
+              <option value="contacto">Contacto</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label for="tipoInput">Tipo de Elemento:</label>
+            <select id="tipoInput" onchange="cambiarInterfazTipo()">
+              <option value="texto">Texto / Párrafo</option>
+              <option value="imagen">Imágenes (Subir una o varias)</option>
+              <option value="video">Video Local (Subir MP4, WEBM)</option>
+              <option value="youtube">Video de YouTube (Enlace)</option>
+              <option value="enlace">Hipervínculo / Web Externa</option>
+              <option value="audio">Música / Audio (Subir MP3)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tituloInput">Título o Encabezado:</label>
+          <input type="text" id="tituloInput" placeholder="Ej. Himno Escolar, Galería de Fotos, Canal de YouTube" required>
+        </div>
+
+        <!-- CAMPO DINÁMICO DE TEXTO O ENLACE -->
+        <div class="form-group" id="grupoTextoUrl">
+          <label id="labelTextoUrl" for="contenidoInput">Texto / Descripción:</label>
+          <textarea id="contenidoInput" rows="3" placeholder="Escribe el texto o pega el enlace aquí..."></textarea>
+        </div>
+
+        <!-- CAMPO DINÁMICO PARA ARCHIVOS (IMÁGENES / VIDEOS / AUDIO) -->
+        <div class="form-group" id="grupoArchivo" style="display: none;">
+          <label id="labelArchivo" for="archivoInput">Seleccionar Archivo(s):</label>
+          <input type="file" id="archivoInput" accept="image/*,video/*,audio/*,application/pdf" multiple onchange="previsualizarArchivos(this)">
+          <small style="font-size: 11px; color: #718096; display: block; margin-top: 4px;">Mantén presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples archivos.</small>
+          <div id="galeriaPreviaAdmin" class="preview-container"></div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Publicar en el Portal</button>
+      </form>
+    </div>
+
+    <!-- LISTADO DE ELEMENTOS PUBLICADOS CON OPCIÓN DE ELIMINAR -->
+    <div class="card">
+      <h2>2. Elementos Activos en el Portal</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Pestaña</th>
+              <th>Tipo</th>
+              <th>Título</th>
+              <th>Vista Previa / URL</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaContenido">
+            <!-- Carga dinámicamente -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -157,93 +245,170 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function cargarAnuncios() {
-      const contenedor = document.getElementById('contenedorAnuncios');
+    const CLAVE_ADMIN = 'admin123';
 
-      // Consultar únicamente los registros marcados para la pestaña "anuncios"
-      const { data, error } = await supabaseClient
-        .from('contenido_portal')
-        .select('*')
-        .eq('pestana', 'anuncios')
-        .order('id', { ascending: false });
+    function login() {
+      if (document.getElementById('passInput').value === CLAVE_ADMIN) {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        cargarContenido();
+      } else { alert('Contraseña administrativa incorrecta'); }
+    }
 
-      if (error) {
-        contenedor.innerHTML = `<div class="estado-vacio">Error al cargar anuncios: ${error.message}</div>`;
-        return;
+    function logout() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('passInput').value = '';
+    }
+
+    function cambiarInterfazTipo() {
+      const tipo = document.getElementById('tipoInput').value;
+      const pestanaInput = document.getElementById('pestanaInput');
+      const grupoTextoUrl = document.getElementById('grupoTextoUrl');
+      const grupoArchivo = document.getElementById('grupoArchivo');
+      const labelTextoUrl = document.getElementById('labelTextoUrl');
+      const galeriaPrevia = document.getElementById('galeriaPreviaAdmin');
+      
+      galeriaPrevia.innerHTML = '';
+
+      // Asignar automáticamente la pestaña de "Anuncios" para multimedia y enlaces
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'youtube' || tipo === 'enlace') {
+        pestanaInput.value = 'anuncios';
       }
 
-      if (!data || data.length === 0) {
-        contenedor.innerHTML = '<div class="estado-vacio">No hay anuncios publicados por el momento.</div>';
-        return;
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'pdf') {
+        grupoArchivo.style.display = 'block';
+        grupoTextoUrl.style.display = 'none';
+      } else {
+        grupoArchivo.style.display = 'none';
+        grupoTextoUrl.style.display = 'block';
+        if (tipo === 'youtube') labelTextoUrl.innerText = 'URL del Video de YouTube:';
+        else if (tipo === 'enlace') labelTextoUrl.innerText = 'Enlace Web (URL):';
+        else labelTextoUrl.innerText = 'Texto / Contenido:';
+      }
+    }
+
+    function previsualizarArchivos(input) {
+      const contenedor = document.getElementById('galeriaPreviaAdmin');
+      contenedor.innerHTML = '';
+      const archivos = input.files;
+
+      if (!archivos || archivos.length === 0) return;
+
+      Array.from(archivos).forEach(archivo => {
+        if (archivo.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(archivo);
+          contenedor.appendChild(img);
+        } else if (archivo.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(archivo);
+          video.controls = true;
+          contenedor.appendChild(video);
+        }
+      });
+    }
+
+    async function guardarContenido(e) {
+      e.preventDefault();
+      const pestana = document.getElementById('pestanaInput').value;
+      const tipo = document.getElementById('tipoInput').value;
+      const titulo = document.getElementById('tituloInput').value.trim();
+      let valorFinal = document.getElementById('contenidoInput').value.trim();
+
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'pdf') {
+        const files = document.getElementById('archivoInput').files;
+        if (!files || files.length === 0) { alert('Por favor selecciona al menos un archivo.'); return; }
+
+        const urlsGuardadas = [];
+
+        for (let file of files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, file);
+
+          if (uploadErr) {
+            alert('Error al subir archivo (' + file.name + '): ' + uploadErr.message);
+            return;
+          }
+
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urlsGuardadas.push(data.publicUrl);
+        }
+
+        valorFinal = urlsGuardadas.join(',');
+      }
+
+      const { error } = await supabaseClient.from('contenido_portal').insert([{
+        pestana: pestana,
+        tipo: tipo,
+        titulo: titulo,
+        contenido_url: valorFinal
+      }]);
+
+      if (error) { 
+        alert('Error al guardar: ' + error.message); 
+      } else {
+        alert('Elemento publicado con éxito.');
+        e.target.reset();
+        document.getElementById('galeriaPreviaAdmin').innerHTML = '';
+        cambiarInterfazTipo();
+        cargarContenido();
+      }
+    }
+
+    async function cargarContenido() {
+      const tbody = document.getElementById('tablaContenido');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
+
+      const { data, error } = await supabaseClient.from('contenido_portal').select('*').order('id', { ascending: false });
+
+      if (error || !data) { 
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Sin elementos cargados.</td></tr>'; 
+        return; 
       }
 
       let html = '';
-
       data.forEach(item => {
-        html += `<div class="anuncio-card">`;
-        html += `<h2>${escaparHTML(item.titulo)}</h2>`;
+        let detalleHtml = '';
 
-        if (item.tipo === 'texto') {
-          html += `<p>${escaparHTML(item.contenido_url)}</p>`;
-        } 
-        else if (item.tipo === 'imagen') {
+        if (item.tipo === 'imagen') {
           const urls = item.contenido_url.split(',');
-          html += `<div class="galeria-grid">`;
-          urls.forEach(url => {
-            html += `<img src="${url}" alt="${escaparHTML(item.titulo)}" onclick="window.open('${url}', '_blank')">`;
+          detalleHtml = '<div class="table-thumb-container">';
+          urls.forEach(u => {
+            detalleHtml += `<img src="${u}" class="table-thumb" onclick="window.open('${u}', '_blank')">`;
           });
-          html += `</div>`;
-        } 
-        else if (item.tipo === 'video') {
+          detalleHtml += '</div>';
+        } else if (item.tipo === 'video') {
           const urls = item.contenido_url.split(',');
-          html += `<div class="video-container">`;
-          urls.forEach(url => {
-            html += `<video src="${url}" controls preload="metadata"></video>`;
+          detalleHtml = '<div class="table-thumb-container">';
+          urls.forEach(u => {
+            detalleHtml += `<video src="${u}" class="table-thumb" onclick="window.open('${u}', '_blank')"></video>`;
           });
-          html += `</div>`;
-        } 
-        else if (item.tipo === 'audio') {
-          const urls = item.contenido_url.split(',');
-          html += `<div class="video-container">`;
-          urls.forEach(url => {
-            html += `<audio src="${url}" controls></audio>`;
-          });
-          html += `</div>`;
-        } 
-        else if (item.tipo === 'youtube') {
-          const embedUrl = convertirAEmbedYoutube(item.contenido_url);
-          if (embedUrl) {
-            html += `<iframe class="iframe-youtube" src="${embedUrl}" allowfullscreen></iframe>`;
-          } else {
-            html += `<a href="${item.contenido_url}" target="_blank" class="enlace-btn">Ver video en YouTube</a>`;
-          }
-        } 
-        else if (item.tipo === 'enlace') {
-          html += `<a href="${item.contenido_url}" target="_blank" class="enlace-btn">Visitar enlace externo &rarr;</a>`;
+          detalleHtml += '</div>';
+        } else {
+          detalleHtml = `<small style="color: #718096;">${item.contenido_url.substring(0, 45)}...</small>`;
         }
 
-        html += `</div>`;
+        html += `
+          <tr>
+            <td><b style="color: var(--azul-marino);">${item.pestana.toUpperCase()}</b></td>
+            <td>${item.tipo}</td>
+            <td>${item.titulo}</td>
+            <td>${detalleHtml}</td>
+            <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarElemento(${item.id})">Eliminar</button></td>
+          </tr>
+        `;
       });
-
-      contenedor.innerHTML = html;
+      tbody.innerHTML = html;
     }
 
-    function convertirAEmbedYoutube(url) {
-      if (!url) return null;
-      let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      let match = url.match(regExp);
-      return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+    async function eliminarElemento(id) {
+      if (confirm('¿Deseas eliminar este elemento del portal?')) {
+        await supabaseClient.from('contenido_portal').delete().eq('id', id);
+        cargarContenido();
+      }
     }
-
-    function escaparHTML(str) {
-      if (!str) return '';
-      return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-      );
-    }
-
-    // Cargar los anuncios automáticamente al abrir la página
-    cargarAnuncios();
   </script>
 </body>
 </html>
