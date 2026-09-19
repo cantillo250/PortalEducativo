@@ -177,8 +177,8 @@
           <div class="form-group" style="flex: 1; min-width: 200px;">
             <label for="pestanaInput">Pestaña Destino:</label>
             <select id="pestanaInput">
+              <option value="anuncios" selected>Anuncios</option>
               <option value="escuela">La Escuela</option>
-              <option value="anuncios">Anuncios</option>
               <option value="contacto">Contacto</option>
             </select>
           </div>
@@ -263,12 +263,18 @@
 
     function cambiarInterfazTipo() {
       const tipo = document.getElementById('tipoInput').value;
+      const pestanaInput = document.getElementById('pestanaInput');
       const grupoTextoUrl = document.getElementById('grupoTextoUrl');
       const grupoArchivo = document.getElementById('grupoArchivo');
       const labelTextoUrl = document.getElementById('labelTextoUrl');
       const galeriaPrevia = document.getElementById('galeriaPreviaAdmin');
       
       galeriaPrevia.innerHTML = '';
+
+      // Asignar automáticamente la pestaña de "Anuncios" para multimedia y enlaces
+      if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'youtube' || tipo === 'enlace') {
+        pestanaInput.value = 'anuncios';
+      }
 
       if (tipo === 'imagen' || tipo === 'video' || tipo === 'audio' || tipo === 'pdf') {
         grupoArchivo.style.display = 'block';
