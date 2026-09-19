@@ -422,12 +422,12 @@
       if (element) element.classList.add('active');
     }
 
-    // CARGAR ARCHIVOS Y PUBLICACIONES EN ORDEN ASCENDENTE (PRIMERO LOS MÁS ANTIGUOS)
+    // CARGAR ARCHIVOS Y PUBLICACIONES EN ORDEN ASCENDENTE (MÁS ANTIGUOS PRIMERO)
     async function cargarContenidoDinamico() {
       const { data, error } = await supabaseClient
         .from('contenido_portal')
         .select('*')
-        .order('id', { ascending: true }); // ORDEN ASCENDENTE
+        .order('id', { ascending: true }); // Mantiene orden ascendente
 
       if (error || !data) return;
 
@@ -528,7 +528,7 @@
       });
     }
 
-    // CONSULTAR PROGRESO EN ORDEN ASCENDENTE
+    // CONSULTAR PROGRESO EN ORDEN DESCENDENTE (FECHAS MÁS RECIENTES PRIMERO)
     async function consultarProgreso() {
       const codigo = document.getElementById('codigoInput').value.trim();
       const trimestre = document.getElementById('trimestreFiltro').value;
@@ -549,12 +549,13 @@
         return;
       }
 
+      // Consulta de actividades ordenadas por fecha de creación en DESCENDENTE (ascending: false)
       const { data: trabajos } = await supabaseClient
         .from('actividades')
         .select('*')
         .eq('alumno_codigo', codigo)
         .eq('trimestre', trimestre)
-        .order('created_at', { ascending: true }); // FECHAS ASCENDENTES
+        .order('created_at', { ascending: false }); // MUESTRA PRIMERO LO MÁS RECIENTE
 
       let html = `
         <div class="student-info">
@@ -564,6 +565,13 @@
       `;
 
       if (trabajos && trabajos.length > 0) {
+        // Orden adicional por fecha de entrega/carga en caso de usar campos manuales
+        trabajos.sort((a, b) => {
+          const fechaA = new Date(a.created_at || a.fecha);
+          const fechaB = new Date(b.created_at || b.fecha);
+          return fechaB - fechaA; // Orden descendente manual
+        });
+
         const total = trabajos.length;
         const entregados = trabajos.filter(t => t.estado === 'Entregado').length;
         const porcentaje = Math.round((entregados / total) * 100);
@@ -669,7 +677,7 @@
         .from('mensajes_chat')
         .select('*')
         .eq('alumno_codigo', codigoChatActual)
-        .order('created_at', { ascending: true }); // MENSAJES ASCENDENTES
+        .order('created_at', { ascending: true });
 
       if (error) return;
 
