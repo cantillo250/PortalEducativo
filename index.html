@@ -422,12 +422,12 @@
       if (element) element.classList.add('active');
     }
 
-    // CARGAR ARCHIVOS Y PUBLICACIONES EN ORDEN DESCENDENTE (MÁS RECIENTES PRIMERO)
+    // CARGAR ARCHIVOS Y PUBLICACIONES EN ORDEN ASCENDENTE (PRIMERO LOS MÁS ANTIGUOS)
     async function cargarContenidoDinamico() {
       const { data, error } = await supabaseClient
         .from('contenido_portal')
         .select('*')
-        .order('id', { ascending: false }); // ORDEN DESCENDENTE
+        .order('id', { ascending: true }); // ORDEN ASCENDENTE
 
       if (error || !data) return;
 
@@ -528,7 +528,7 @@
       });
     }
 
-    // CONSULTAR PROGRESO EN ORDEN DESCENDENTE
+    // CONSULTAR PROGRESO EN ORDEN ASCENDENTE
     async function consultarProgreso() {
       const codigo = document.getElementById('codigoInput').value.trim();
       const trimestre = document.getElementById('trimestreFiltro').value;
@@ -554,7 +554,7 @@
         .select('*')
         .eq('alumno_codigo', codigo)
         .eq('trimestre', trimestre)
-        .order('created_at', { ascending: false }); // FECHAS DESCENDENTES
+        .order('created_at', { ascending: true }); // FECHAS ASCENDENTES
 
       let html = `
         <div class="student-info">
@@ -669,7 +669,7 @@
         .from('mensajes_chat')
         .select('*')
         .eq('alumno_codigo', codigoChatActual)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }); // MENSAJES ASCENDENTES
 
       if (error) return;
 
