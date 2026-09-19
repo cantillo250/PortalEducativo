@@ -71,7 +71,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    nav button {
+    nav button, nav a {
       background: none;
       border: none;
       color: rgba(255, 255, 255, 0.85);
@@ -79,11 +79,13 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
+      text-decoration: none;
       transition: all 0.3s ease;
       position: relative;
+      display: inline-block;
     }
 
-    nav button:hover {
+    nav button:hover, nav a:hover {
       color: white;
       background-color: rgba(255,255,255,0.08);
     }
@@ -105,7 +107,7 @@
     }
 
     /* CONTENEDOR PRINCIPAL */
-    .container { max-width: 1000px; margin: 35px auto; padding: 0 20px; }
+    .container { max-width: 1050px; margin: 35px auto; padding: 0 20px; }
 
     .tab-content {
       display: none;
@@ -177,28 +179,30 @@
 
     /* TABLA DE ACTIVIDADES */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; border-radius: 8px; overflow: hidden; }
-    th, td { padding: 14px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
     th { background-color: var(--azul-marino); color: white; font-weight: 600; }
 
     .status { padding: 5px 10px; border-radius: 20px; font-weight: 600; font-size: 12px; display: inline-block; }
     .status.entregado { background-color: #d1fae5; color: #065f46; }
     .status.pendiente { background-color: #fee2e2; color: #991b1b; }
+    .status.no-entregado { background-color: #fca5a5; color: #7f1d1d; }
     .status.revision { background-color: #fef3c7; color: #92400e; }
 
     .btn-recurso {
       display: inline-block;
-      padding: 6px 12px;
+      padding: 5px 10px;
       background-color: var(--azul-marino);
       color: white;
       text-decoration: none;
       border-radius: 4px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
+      margin-top: 2px;
     }
 
-    .obs-text { font-style: italic; color: #64748b; font-size: 13px; }
+    .obs-text { font-style: italic; color: #64748b; font-size: 12px; }
 
-    /* TARJETAS DINÁMICAS (DEL DASHBOARD) */
+    /* TARJETAS DINÁMICAS */
     .dynamic-card {
       margin-top: 20px;
       padding: 22px;
@@ -207,6 +211,21 @@
       border-left: 4px solid var(--dorado);
       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
+
+    /* GALERÍA PREVISUALIZACIÓN DE CHAT */
+    .preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .preview-container img, .preview-container video {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
   </style>
 </head>
 <body>
@@ -214,7 +233,6 @@
   <!-- HEADER INSTITUCIONAL -->
   <header>
     <div class="header-container">
-      <!-- Reemplaza la ruta de la imagen con la tuya si la subiste a Supabase u otra carpeta -->
       <img src="escudo.png" alt="Escudo Colegio Frida Kahlo" class="logo-escudo">
       <div class="header-text">
         <h1>Colegio Frida Kahlo</h1>
@@ -229,12 +247,11 @@
     <button class="nav-btn" onclick="openTab('anuncios', this)">Anuncios</button>
     <button class="nav-btn" onclick="openTab('contacto', this)">Contacto</button>
     <button class="nav-btn" onclick="openTab('progreso', this)">Mi Progreso</button>
-      <a href="admin.html" class="nav-btn">Panel Docente</a>
-      <a href="dashboard.html" class="nav-btn">Administración</a>
+    <a href="admin.html" class="nav-btn">Panel Docente</a>
+    <a href="dashboard.html" class="nav-btn">Administración</a>
   </nav>
 
   <div class="container">
-    <!-- SECCIONES DINÁMICAS -->
     <section id="escuela" class="tab-content active">
       <h2 class="tab-title">La Escuela</h2>
     </section>
@@ -243,45 +260,59 @@
       <h2 class="tab-title">Avisos e Informes Importantes</h2>
     </section>
 
+    <!-- CONTACTO CON SELECCIÓN MÚLTIPLE DE MULTIMEDIA Y PREVISUALIZACIÓN -->
     <section id="contacto" class="tab-content">
-  <h2 class="tab-title">Chat Directo y Atención Privada</h2>
-  <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Ingresa la clave del alumno para acceder a tu canal de comunicación privado con el personal docente y directivo.</p>
-  
-  <!-- ACCESO AL CHAT POR CÓDIGO -->
-  <div class="search-box">
-    <input type="text" id="codigoChatInput" placeholder="Ingresa la Clave del Alumno">
-    <button onclick="iniciarChatAlumno()">Acceder al Chat</button>
-  </div>
-
-  <!-- CAJA DEL CHAT PRIVADO -->
-  <div id="cajaChat" style="display: none; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 20px;">
-    <div style="background-color: var(--azul-marino); color: white; padding: 12px 20px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
-      <span id="chatHeaderAlumno">Chat Privado</span>
-      <small style="color: var(--dorado-claro);">Canal Oficial Colegio Frida Kahlo</small>
-    </div>
-
-    <!-- ÁREA DE MENSAJES -->
-    <div id="mensajesContenedor" style="height: 350px; overflow-y: auto; padding: 15px; background-color: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
-      <!-- Los mensajes se cargan dinámicamente -->
-    </div>
-
-    <!-- PANEL DE ENVÍO -->
-    <div style="padding: 15px; background-color: white; border-top: 1px solid #e2e8f0;">
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <textarea id="textoMensajeInput" rows="2" placeholder="Escribe tu consulta o mensaje aquí..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px;"></textarea>
+      <h2 class="tab-title">Chat Directo y Atención Privada</h2>
+      <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Ingresa la clave del alumno para acceder a tu canal de comunicación privado con el personal docente y directivo.</p>
+      
+      <div class="search-box">
+        <input type="text" id="codigoChatInput" placeholder="Ingresa la Clave del Alumno (Ej. 05-4921)">
+        <button onclick="iniciarChatAlumno()">Acceder al Chat</button>
       </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <div>
-          <label style="font-size: 12px; color: #64748b; font-weight: 600;">Adjuntar Imagen / Video (Opcional):</label>
-          <input type="file" id="adjuntoChatInput" accept="image/*,video/*,application/pdf" style="font-size: 12px; display: block; margin-top: 2px;">
+
+      <div id="cajaChat" style="display: none; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 20px;">
+        <div style="background-color: var(--azul-marino); color: white; padding: 12px 20px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+          <span id="chatHeaderAlumno">Chat Privado</span>
+          <small style="color: var(--dorado-claro);">Canal Oficial Colegio Frida Kahlo</small>
         </div>
-        <button onclick="enviarMensajeAlumno()" style="background-color: var(--vino-granate); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;">Enviar Mensaje</button>
-      </div>
-    </div>
-  </div>
-</section>
 
-    <!-- SECCIÓN MI PROGRESO -->
+        <div id="mensajesContenedor" style="height: 380px; overflow-y: auto; padding: 15px; background-color: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
+        </div>
+
+        <!-- PANEL DE ENVÍO MULTIMEDIA -->
+        <div style="padding: 15px; background-color: white; border-top: 1px solid #e2e8f0;">
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <textarea id="textoMensajeInput" rows="2" placeholder="Escribe tu consulta o mensaje aquí..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px;"></textarea>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+            <div style="flex: 1; min-width: 250px;">
+              <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block;">
+                Adjuntar Archivos (Imágenes y Videos):
+              </label>
+              
+              <!-- INPUT DE ARCHIVOS CON SELECCIÓN MÚLTIPLE DE IMÁGENES Y VIDEOS -->
+              <input 
+                type="file" 
+                id="adjuntoChatInput" 
+                accept="image/*,video/*,audio/*,application/pdf" 
+                multiple 
+                onchange="mostrarPrevisualizacion(this)"
+                style="font-size: 12px; display: block; margin-top: 4px;">
+              
+              <small style="font-size:11px; color:#94a3b8;">Sostén la tecla Ctrl o Cmd para seleccionar varios elementos.</small>
+              
+              <!-- VISTA PREVIA DE ARCHIVOS SELECCIONADOS -->
+              <div id="galeriaPrevia" class="preview-container"></div>
+            </div>
+
+            <button onclick="enviarMensajeAlumno()" style="background-color: var(--vino-granate); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; height: fit-content;">Enviar Mensaje</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRESO -->
     <section id="progreso" class="tab-content">
       <h2 class="tab-title">Consulta de Progreso Estudiantil</h2>
       <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecciona el trimestre correspondiente e ingresa el código del alumno.</p>
@@ -300,23 +331,22 @@
     </section>
   </div>
 
-<script>
+  <script>
     const SUPABASE_URL = 'https://imhyumybedzvpzayqfqj.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let codigoChatActual = null; // Variable única para guardar el código activo
+    let codigoChatActual = null;
 
     function openTab(tabId, element) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      element.classList.add('active');
+      if (element) element.classList.add('active');
     }
 
     async function cargarContenidoDinamico() {
       const { data, error } = await supabaseClient.from('contenido_portal').select('*');
-
       if (error || !data) return;
 
       ['escuela', 'anuncios', 'contacto'].forEach(pestana => {
@@ -330,11 +360,11 @@
           if (item.tipo === 'texto') {
             htmlElemento += `<p style="line-height:1.6; color:#334155;">${item.contenido_url}</p>`;
           } else if (item.tipo === 'imagen') {
-    if (item.contenido_url.toLowerCase().includes('.pdf')) {
-        htmlElemento += `<a href="${item.contenido_url}" target="_blank" style="display:inline-block; margin-top:10px; padding:10px 18px; background-color:var(--azul-marino); color:white; text-decoration:none; border-radius:6px; font-weight:600;">📄 Abrir Documento (PDF)</a>`;
-    } else {
-        htmlElemento += `<img src="${item.contenido_url}" style="max-width:100%; height:auto; border-radius:8px; margin-top:8px;">`;
-    }
+            if (item.contenido_url.toLowerCase().includes('.pdf')) {
+              htmlElemento += `<a href="${item.contenido_url}" target="_blank" style="display:inline-block; margin-top:10px; padding:10px 18px; background-color:var(--azul-marino); color:white; text-decoration:none; border-radius:6px; font-weight:600;">📄 Abrir Documento (PDF)</a>`;
+            } else {
+              htmlElemento += `<img src="${item.contenido_url}" style="max-width:100%; height:auto; border-radius:8px; margin-top:8px;">`;
+            }
           } else if (item.tipo === 'youtube') {
             let videoId = item.contenido_url;
             if (item.contenido_url.includes('v=')) {
@@ -355,6 +385,31 @@
       });
     }
 
+    // FUNCIÓN PARA PREVISUALIZAR IMÁGENES Y VIDEOS ANTES DE ENVIAR
+    function mostrarPrevisualizacion(input) {
+      const contenedor = document.getElementById('galeriaPrevia');
+      contenedor.innerHTML = '';
+      const archivos = input.files;
+
+      if (!archivos || archivos.length === 0) return;
+
+      Array.from(archivos).forEach(archivo => {
+        const urlTemporal = URL.createObjectURL(archivo);
+
+        if (archivo.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = urlTemporal;
+          contenedor.appendChild(img);
+        } else if (archivo.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = urlTemporal;
+          video.controls = true;
+          contenedor.appendChild(video);
+        }
+      });
+    }
+
+    // CONSULTAR PROGRESO
     async function consultarProgreso() {
       const codigo = document.getElementById('codigoInput').value.trim();
       const trimestre = document.getElementById('trimestreFiltro').value;
@@ -380,7 +435,7 @@
         .select('*')
         .eq('alumno_codigo', codigo)
         .eq('trimestre', trimestre)
-        .order('fecha', { ascending: false });
+        .order('created_at', { ascending: false });
 
       let html = `
         <div class="student-info">
@@ -396,27 +451,42 @@
 
         html += `
           <p style="margin: 12px 0; font-size:14px;"><strong>Desempeño del ${trimestre}:</strong> ${entregados} de ${total} actividades completadas (<strong>${porcentaje}%</strong>)</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Materia / Tarea</th>
-                <th>Estatus</th>
-                <th>Observaciones Docente</th>
-                <th>Recurso</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha Carga</th>
+                  <th>Fecha Entrega</th>
+                  <th>Materia / Tarea</th>
+                  <th>Estatus</th>
+                  <th>Observaciones Docente</th>
+                  <th>Recurso</th>
+                </tr>
+              </thead>
+              <tbody>
         `;
 
         trabajos.forEach(t => {
-          let badgeClass = t.estado === 'Entregado' ? 'entregado' : (t.estado === 'En Revisión' ? 'revision' : 'pendiente');
-          let recursoLink = t.url_archivo ? `<a href="${t.url_archivo}" target="_blank" class="btn-recurso">Ver Archivo</a>` : '-';
+          let badgeClass = 'pendiente';
+          if (t.estado === 'Entregado') badgeClass = 'entregado';
+          else if (t.estado === 'No Entregado') badgeClass = 'no-entregado';
+          else if (t.estado === 'En Revisión') badgeClass = 'revision';
+
+          const fechaCarga = t.created_at ? new Date(t.created_at).toLocaleDateString('es-MX') : (t.fecha || 'N/A');
+          const fechaEntrega = t.fecha || 'N/A';
+
+          let recursoLink = '-';
+          if (t.url_archivo) {
+            const urls = t.url_archivo.split(',');
+            recursoLink = urls.map((u, i) => `<a href="${u}" target="_blank" class="btn-recurso">Archivo ${i+1}</a>`).join(' ');
+          }
+
           let notas = t.observaciones ? `<span class="obs-text">${t.observaciones}</span>` : 'Sin observaciones';
 
           html += `
             <tr>
-              <td>${t.fecha}</td>
+              <td><small style="color:#64748b; font-weight:600;">${fechaCarga}</small></td>
+              <td><small style="color:var(--vino-granate); font-weight:600;">${fechaEntrega}</small></td>
               <td><b>${t.materia}:</b> ${t.titulo}</td>
               <td><span class="status ${badgeClass}">${t.estado}</span></td>
               <td>${notas}</td>
@@ -425,7 +495,7 @@
           `;
         });
 
-        html += `</tbody></table>`;
+        html += `</tbody></table></div>`;
       } else {
         html += `<p style="margin-top: 15px; color:#64748b;">No se registran actividades evaluadas para el ${trimestre}.</p>`;
       }
@@ -433,6 +503,7 @@
       contenedor.innerHTML = html;
     }
 
+    // CHAT
     async function iniciarChatAlumno() {
       const codigo = document.getElementById('codigoChatInput').value.trim();
       if (!codigo) { alert('Ingresa tu clave de alumno.'); return; }
@@ -452,10 +523,27 @@
       activarChatTiempoRealAlumno();
     }
 
+    async function subirArchivosMultiples(archivos) {
+      if (!archivos || archivos.length === 0) return null;
+
+      const urls = [];
+      for (let file of archivos) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `chat_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, file);
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urls.push(data.publicUrl);
+        }
+      }
+      return urls.length > 0 ? urls.join(',') : null;
+    }
+
     async function cargarMensajesAlumno() {
       if (!codigoChatActual) return;
 
-      const contenedor = document.getElementById('mensajesAlumnoContenedor') || document.getElementById('mensajesContenedor');
+      const contenedor = document.getElementById('mensajesContenedor');
       if (!contenedor) return;
 
       const { data: mensajes, error } = await supabaseClient
@@ -464,10 +552,7 @@
         .eq('alumno_codigo', codigoChatActual)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error al cargar mensajes:', error);
-        return;
-      }
+      if (error) return;
 
       if (!mensajes || mensajes.length === 0) {
         contenedor.innerHTML = '<div style="text-align:center; color:#94a3b8; padding: 20px;">No hay mensajes registrados.</div>';
@@ -481,18 +566,28 @@
         
         let contenidoAdjunto = '';
         if (urlArchivo) {
-          const esImg = urlArchivo.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-          if (esImg) {
-            contenidoAdjunto = `<br><img src="${urlArchivo}" style="max-width:180px; border-radius:6px; margin-top:5px; cursor:pointer;" onclick="window.open('${urlArchivo}')">`;
-          } else {
-            contenidoAdjunto = `<br><a href="${urlArchivo}" target="_blank" style="color:#1a4971; font-weight:bold; font-size:12px;">📎 Ver Archivo</a>`;
-          }
+          const urls = urlArchivo.split(',');
+          urls.forEach(url => {
+            const esImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            const esVid = url.match(/\.(mp4|webm|ogg|mov)$/i);
+            const esAud = url.match(/\.(mp3|wav|ogg|m4a)$/i);
+
+            if (esImg) {
+              contenidoAdjunto += `<br><img src="${url}" style="max-width:200px; border-radius:6px; margin-top:5px; cursor:pointer;" onclick="window.open('${url}')">`;
+            } else if (esVid) {
+              contenidoAdjunto += `<br><video src="${url}" controls style="max-width:220px; border-radius:6px; margin-top:5px;"></video>`;
+            } else if (esAud) {
+              contenidoAdjunto += `<br><audio src="${url}" controls style="max-width:230px; margin-top:5px;"></audio>`;
+            } else {
+              contenidoAdjunto += `<br><a href="${url}" target="_blank" style="color:${esAlumno ? '#f1dfa3' : '#032b5b'}; font-weight:bold; font-size:12px;">📎 Ver Archivo Adjunto</a>`;
+            }
+          });
         }
 
         html += `
-          <div style="align-self: ${esAlumno ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esAlumno ? '#1a4971' : '#e2e8f0'}; color: ${esAlumno ? '#ffffff' : '#1e293b'}; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;">
-            <small style="display:block; font-size:10px; opacity:0.8;">${esAlumno ? 'Tú' : 'Docente'}</small>
-            <span style="font-size:13px;">${m.mensaje || ''}</span>
+          <div style="align-self: ${esAlumno ? 'flex-end' : 'flex-start'}; max-width: 80%; background: ${esAlumno ? 'var(--azul-marino)' : '#e2e8f0'}; color: ${esAlumno ? '#ffffff' : '#1e293b'}; padding: 10px 14px; border-radius: 8px; margin-bottom: 4px;">
+            <small style="display:block; font-size:10px; opacity:0.8; font-weight:600; margin-bottom:3px;">${esAlumno ? 'Tú (Alumno/Tutor)' : 'Docente / Colegio'}</small>
+            <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
             ${contenidoAdjunto}
           </div>
         `;
@@ -510,25 +605,14 @@
 
       const mensajeText = document.getElementById('textoMensajeInput').value.trim();
       const archivoInput = document.getElementById('adjuntoChatInput');
-      const archivo = archivoInput ? archivoInput.files[0] : null;
+      const archivosFiles = archivoInput ? archivoInput.files : [];
 
-      if (!mensajeText && !archivo) {
-        alert('Escribe un mensaje o selecciona un archivo.');
+      if (!mensajeText && archivosFiles.length === 0) {
+        alert('Escribe un mensaje o selecciona al menos un archivo.');
         return;
       }
 
-      let urlAdjunto = null;
-
-      if (archivo) {
-        const fileExt = archivo.name.split('.').pop();
-        const fileName = `chat_${Date.now()}.${fileExt}`;
-        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, archivo);
-        
-        if (!uploadErr) {
-          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
-          urlAdjunto = data.publicUrl;
-        }
-      }
+      const urlAdjunto = await subirArchivosMultiples(archivosFiles);
 
       await supabaseClient.from('mensajes_chat').insert([{
         alumno_codigo: codigoChatActual,
@@ -539,6 +623,7 @@
 
       if (document.getElementById('textoMensajeInput')) document.getElementById('textoMensajeInput').value = '';
       if (archivoInput) archivoInput.value = '';
+      document.getElementById('galeriaPrevia').innerHTML = '';
       
       cargarMensajesAlumno();
     }
