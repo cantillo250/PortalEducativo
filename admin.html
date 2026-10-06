@@ -291,6 +291,7 @@
         💬 Mensajes Recibidos
         <span id="badgeNotificaciones" class="badge-notif">0</span>
       </button>
+      <button class="nav-btn" onclick="openTabDocente('tab-contacto-docente', this)">📥 Panel Contacto</button>
     </div>
 
     <!-- PESTAÑA 1: CONTROL ACADÉMICO -->
@@ -456,6 +457,31 @@
       </div>
     </div>
 
+    <!-- PESTAÑA 4: PANEL CONTACTO (CON FECHA Y HORA) -->
+    <div id="tab-contacto-docente" class="tab-content">
+      <div class="card">
+        <h2>📥 Mensajes de Contacto Recibidos</h2>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Remitente / Alumno</th>
+                <th>Mensaje</th>
+                <th>Adjuntos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaContacto">
+              <tr>
+                <td colspan="5" style="text-align:center;">Cargando mensajes de contacto...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -469,6 +495,20 @@
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
     let actividadesCargadas = [];
+
+    // FORMATEAR FECHA Y HORA (Ej: 05/10/2026, 09:30 PM)
+    function formatearFechaHora(fechaIso) {
+      if (!fechaIso) return 'Sin fecha';
+      const fecha = new Date(fechaIso);
+      return fecha.toLocaleString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
 
     // INICIO DE SESIÓN
     function login() {
@@ -531,6 +571,8 @@
         cargarBandejaMensajesDocente();
       } else if (tabId === 'tab-tareas-asignadas') {
         cargarTareasGrupo();
+      } else if (tabId === 'tab-contacto-docente') {
+        cargarMensajesContacto();
       }
     }
 
@@ -971,6 +1013,7 @@
                   );
                 }
                 cargarBandejaMensajesDocente();
+                cargarMensajesContacto();
               }
             }
           }
@@ -1004,6 +1047,7 @@
       cargarMensajesDocente();
     }
 
+    // CARGAR MENSAJES CON FECHA Y HORA EN CADA BURBUJA
     async function cargarMensajesDocente() {
       if (!codigoChatDocenteActual) return;
 
@@ -1028,6 +1072,7 @@
       let html = '';
       mensajes.forEach(m => {
         const esDocente = m.remitente === 'docente';
+        const fechaHora = formatearFechaHora(m.created_at);
         
         let contenidoAdjunto = '';
         if (m.url_archivo) {
@@ -1048,7 +1093,10 @@
 
         html += `
           <div style="align-self: ${esDocente ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esDocente ? 'var(--azul-marino)' : '#ffffff'}; color: ${esDocente ? '#ffffff' : '#2d3748'}; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${esDocente ? 'none' : '1px solid var(--borde)'};">
-            <small style="display:block; font-size:10px; opacity:0.8; margin-bottom:3px; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 3px;">
+              <small style="font-size:10px; opacity:0.8; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
+              <small style="font-size:9px; opacity:0.7;">${fechaHora}</small>
+            </div>
             <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
             ${contenidoAdjunto}
           </div>
@@ -1091,6 +1139,79 @@
         archivoInput.value = '';
         cargarMensajesDocente();
         cargarBandejaMensajesDocente();
+        cargarMensajesContacto();
+      }
+    }
+
+    // CARGAR TABLA DE CONTACTO CON FECHA Y HORA DE ENVÍO
+    async function cargarMensajesContacto() {
+      const tbody = document.getElementById('cuerpoTablaContacto');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando mensajes...</td></tr>';
+
+      const { data: mensajes, error } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error al cargar mensajes.</td></tr>';
+        return;
+      }
+
+      if (!mensajes || mensajes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay mensajes registrados.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      mensajes.forEach(m => {
+        const fechaFormateada = formatearFechaHora(m.created_at);
+
+        let adjuntosHTML = '<span style="color:#a0aec0;">Sin adjuntos</span>';
+        if (m.url_archivo) {
+          const urls = m.url_archivo.split(',');
+          adjuntosHTML = urls.map((url, i) => 
+            `<a href="${url}" target="_blank" style="color:var(--azul-rey); font-weight:600; display:block; font-size:12px;">📎 Archivo ${i+1}</a>`
+          ).join('');
+        }
+
+        html += `
+          <tr>
+            <td style="white-space: nowrap; color: #4a5568; font-weight: 500;">
+              📅 ${fechaFormateada}
+            </td>
+            <td>
+              <strong>${m.alumno_codigo}</strong><br>
+              <small style="color:#718096;">${m.remitente === 'docente' ? 'Docente' : 'Alumno / Tutor'}</small>
+            </td>
+            <td style="max-width: 300px; word-wrap: break-word;">
+              ${m.mensaje || '<em>Sin texto</em>'}
+            </td>
+            <td>${adjuntosHTML}</td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarMensajeContacto('${m.id}')">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    async function eliminarMensajeContacto(idMensaje) {
+      if (!confirm('¿Deseas eliminar este mensaje de contacto?')) return;
+
+      const { error } = await supabaseClient
+        .from('mensajes_chat')
+        .delete()
+        .eq('id', idMensaje);
+
+      if (error) {
+        alert('Error al eliminar: ' + error.message);
+      } else {
+        cargarMensajesContacto();
       }
     }
   </script>
