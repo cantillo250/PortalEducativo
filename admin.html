@@ -296,4 +296,666 @@
         </form>
       </div>
 
-      <!-- 2
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO -->
+      <div class="card">
+        <h2>2. Calificación y Observaciones por Alumno</h2>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <select id="trimestreBuscar" style="width: 220px; padding: 9px;">
+            <option value="1er Trimestre">1er Trimestre</option>
+            <option value="2do Trimestre">2do Trimestre</option>
+            <option value="3er Trimestre">3er Trimestre</option>
+          </select>
+          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Alumnos del Grado</button>
+        </div>
+
+        <div id="seccionTablaGrupo" style="display: none; margin-top: 20px; overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Actividad Asignada</th>
+                <th>Estatus</th>
+                <th>Observaciones Individuales</th>
+                <th>Guardar</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaGrupo"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PESTAÑA: TAREAS ASIGNADAS EN EL GRUPO -->
+    <div id="tab-tareas-asignadas" class="tab-content">
+      <div class="card">
+        <h2>📋 Tareas y Actividades del Grupo</h2>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+          <select id="filtroTrimestreTareas" style="width: 220px; padding: 9px;" onchange="cargarTareasGrupo()">
+            <option value="1er Trimestre">1er Trimestre</option>
+            <option value="2do Trimestre">2do Trimestre</option>
+            <option value="3er Trimestre">3er Trimestre</option>
+          </select>
+          <button class="btn" onclick="cargarTareasGrupo()">Actualizar Lista</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Título / Asignatura</th>
+                <th>Trimestre</th>
+                <th>Fecha Límite</th>
+                <th>Instrucciones / Observaciones</th>
+                <th>Material Adjunto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaTareasGrupo">
+              <tr>
+                <td colspan="6" style="text-align:center;">Selecciona un trimestre o presiona Actualizar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: BANDEJA DE MENSAJES AUTOMÁTICA -->
+    <div id="tab-chat-docente" class="tab-content">
+      <div class="card">
+        <h2>💬 Mensajería Automática de Mi Grado</h2>
+        <p style="color: #718096; font-size: 13px; margin-bottom: 15px;">
+          A continuación se muestran automáticamente los alumnos de tu grado que tienen mensajes registrados.
+        </p>
+
+        <div class="chat-layout">
+          <!-- LISTA DINÁMICA DE CONVERSACIONES -->
+          <div class="chat-list" id="listaConversaciones">
+            <div style="padding:20px; color:#a0aec0; font-size:13px; text-align:center;">
+              Cargando conversaciones automáticas...
+            </div>
+          </div>
+
+          <!-- VENTANA DEL CHAT SELECCIONADO -->
+          <div class="chat-window">
+            <div style="background-color: var(--azul-marino); color: white; padding: 14px 18px; font-weight: 600; font-size: 14px; border-bottom: 3px solid var(--dorado);">
+              <span id="headerChatDocente">Selecciona un alumno para chatear</span>
+            </div>
+
+            <div id="mensajesDocenteContenedor" style="flex:1; overflow-y: auto; background-color: #f8fafc; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="text-align: center; color: #a0aec0; margin-top: 50px; font-size: 13px;">
+                No hay ningún chat activo seleccionado.
+              </div>
+            </div>
+
+            <!-- RESPUESTA -->
+            <div id="areaRespuestaChat" style="padding: 15px; background: white; border-top: 1px solid var(--borde); display: none;">
+              <textarea id="textoDocenteInput" rows="2" placeholder="Escribe tu respuesta..." style="width: 100%; padding: 10px; border: 1px solid var(--borde); border-radius: 6px; outline: none; font-size: 13px; margin-bottom: 10px;"></textarea>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <input type="file" id="adjuntoDocenteInput" accept="image/*,video/*,application/pdf" multiple style="font-size: 12px;">
+                </div>
+                <button class="btn btn-success" onclick="enviarRespuestaDocente()">Enviar Respuesta</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://imhyumybedzvpzayqfqj.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaHl1bXliZWR6dnB6YXlxZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMTQ4NzcsImV4cCI6MjEwMjU5MDg3N30.zFwaRSnxat9M7cEbnIK5Pe-0-QJ5P7thVwXIdpst8Hc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const CLAVE_DOCENTE_GENERAL = "docente123";
+
+    let grupoSesion = null;
+    let codigoChatDocenteActual = null;
+    let listaMensajesNuevos = new Set();
+    let cacheActividadesPorAlumno = {};
+
+    // INICIO DE SESIÓN
+    function login() {
+      const gradoSelected = document.getElementById('gradoSelect').value;
+      const pass = document.getElementById('passInput').value;
+
+      if (!gradoSelected) {
+        alert('Por favor selecciona un Grado / Grupo.');
+        return;
+      }
+
+      if (pass === CLAVE_DOCENTE_GENERAL) {
+        grupoSesion = gradoSelected;
+        
+        const materiaGuardada = localStorage.getItem(`docente_materia_${grupoSesion}`) || '';
+
+        if (document.getElementById('materiaDocenteInput')) {
+          document.getElementById('materiaDocenteInput').value = materiaGuardada;
+          document.getElementById('materiaDocenteInput').oninput = (e) => {
+            localStorage.setItem(`docente_materia_${grupoSesion}`, e.target.value);
+          };
+        }
+
+        if (document.getElementById('etiquetaGrado')) {
+          document.getElementById('etiquetaGrado').innerText = `Grado Asignado: ${grupoSesion}`;
+        }
+        
+        if (document.getElementById('grupoInput')) {
+          document.getElementById('grupoInput').value = grupoSesion;
+        }
+
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+
+        cargarBandejaMensajesDocente();
+        escucharNuevosMensajesEnVivo();
+      } else {
+        alert('Contraseña incorrecta.');
+      }
+    }
+
+    function logout() {
+      grupoSesion = null;
+      resetearVentanaChat();
+
+      document.getElementById('passInput').value = '';
+      document.getElementById('gradoSelect').value = '';
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+
+    function openTabDocente(tabId, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      if(btnElement) btnElement.classList.add('active');
+
+      if (tabId === 'tab-chat-docente') {
+        cargarBandejaMensajesDocente();
+      } else if (tabId === 'tab-tareas-asignadas') {
+        cargarTareasGrupo();
+      }
+    }
+
+    // SUBIR ARCHIVOS MÚLTIPLES
+    async function subirArchivosMultiples(archivos) {
+      if (!archivos || archivos.length === 0) return null;
+      
+      const urls = [];
+      for (let file of archivos) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadErr } = await supabaseClient.storage.from('materiales').upload(fileName, file);
+        if (!uploadErr) {
+          const { data } = supabaseClient.storage.from('materiales').getPublicUrl(fileName);
+          urls.push(data.publicUrl);
+        }
+      }
+      return urls.length > 0 ? urls.join(',') : null;
+    }
+
+    // CREAR TAREA
+    async function crearTareaParaGrupo(e) {
+      e.preventDefault();
+      const trimestre = document.getElementById('trimestreInput').value;
+      const grupo = grupoSesion;
+      const materia = document.getElementById('materiaDocenteInput').value.trim() || 'General';
+      const titulo = document.getElementById('tituloInput').value.trim();
+      const fecha = document.getElementById('fechaInput').value;
+      const observaciones = document.getElementById('observacionesInput').value.trim();
+      const archivosFiles = document.getElementById('archivoInput').files;
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupo);
+
+      if (!alumnos || alumnos.length === 0) {
+        alert('No hay alumnos registrados en tu grupo: ' + grupo);
+        return;
+      }
+
+      const urlArchivo = await subirArchivosMultiples(archivosFiles);
+
+      const registros = alumnos.map(al => ({
+        alumno_codigo: al.codigo,
+        trimestre: trimestre,
+        materia: materia,
+        titulo: titulo,
+        fecha: fecha,
+        estado: 'Pendiente',
+        observaciones: observaciones,
+        url_archivo: urlArchivo
+      }));
+
+      const { error } = await supabaseClient.from('actividades').insert(registros);
+
+      if (error) {
+        alert('Error al asignar tarea: ' + error.message);
+      } else {
+        alert(`¡Éxito! Tarea asignada a los ${alumnos.length} alumnos del grupo ${grupo}.`);
+        document.getElementById('actividadGrupoForm').reset();
+        document.getElementById('grupoInput').value = grupoSesion;
+        cargarTareasGrupo();
+      }
+    }
+
+    // TAREAS DEL GRUPO
+    async function cargarTareasGrupo() {
+      const trimestre = document.getElementById('filtroTrimestreTareas').value;
+      const tbody = document.getElementById('cuerpoTablaTareasGrupo');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando tareas del grupo...</td></tr>';
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupoSesion);
+
+      if (!alumnos || alumnos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay alumnos registrados en este grupo.</td></tr>';
+        return;
+      }
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      const { data: actividades, error } = await supabaseClient
+        .from('actividades')
+        .select('*')
+        .eq('trimestre', trimestre)
+        .in('alumno_codigo', codigosAlumnos)
+        .order('fecha', { ascending: true });
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Error al cargar las tareas.</td></tr>';
+        return;
+      }
+
+      if (!actividades || actividades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay tareas asignadas para este trimestre.</td></tr>';
+        return;
+      }
+
+      const tareasUnicas = new Map();
+
+      actividades.forEach(act => {
+        const clave = `${act.titulo}_${act.fecha}_${act.materia}`;
+        if (!tareasUnicas.has(clave)) {
+          tareasUnicas.set(clave, act);
+        }
+      });
+
+      let html = '';
+      tareasUnicas.forEach((tarea) => {
+        let adjuntosHTML = '<span style="color:#a0aec0;">Sin adjuntos</span>';
+        if (tarea.url_archivo) {
+          const urls = tarea.url_archivo.split(',');
+          adjuntosHTML = urls.map((url, i) => 
+            `<a href="${url}" target="_blank" style="color:var(--azul-rey); font-weight:600; display:block; font-size:12px;">📎 Adjunto ${i+1}</a>`
+          ).join('');
+        }
+
+        html += `
+          <tr>
+            <td>
+              <strong>${tarea.titulo}</strong><br>
+              <small style="color:#64748b;">${tarea.materia}</small>
+            </td>
+            <td>${tarea.trimestre}</td>
+            <td>${tarea.fecha || 'Sin fecha'}</td>
+            <td>${tarea.observaciones || '<em>Sin observaciones</em>'}</td>
+            <td>${adjuntosHTML}</td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarTareaGrupo('${tarea.titulo}', '${tarea.trimestre}')">Eliminar Tarea</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    async function eliminarTareaGrupo(titulo, trimestre) {
+      if (!confirm(`¿Estás seguro de que deseas eliminar la tarea "${titulo}" de todo el grupo?`)) return;
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupoSesion);
+      if (!alumnos || alumnos.length === 0) return;
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      const { error } = await supabaseClient
+        .from('actividades')
+        .delete()
+        .eq('titulo', titulo)
+        .eq('trimestre', trimestre)
+        .in('alumno_codigo', codigosAlumnos);
+
+      if (error) {
+        alert('Error al eliminar la tarea: ' + error.message);
+      } else {
+        alert('Tarea eliminada para todo el grupo.');
+        cargarTareasGrupo();
+      }
+    }
+
+    // CARGAR ALUMNOS DESPLEGANDO TODAS LAS ACTIVIDADES Y TAREAS ASIGNADAS
+    async function cargarAlumnosDelGrupo() {
+      const trimestre = document.getElementById('trimestreBuscar').value;
+      const tbody = document.getElementById('cuerpoTablaGrupo');
+      document.getElementById('seccionTablaGrupo').style.display = 'block';
+
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando alumnos...</td></tr>';
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
+      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre);
+
+      if (!alumnos || alumnos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron alumnos en el grupo ' + grupoSesion + '</td></tr>';
+        return;
+      }
+
+      cacheActividadesPorAlumno = {};
+      let html = '';
+
+      alumnos.forEach(al => {
+        // Se obtienen TODAS las tareas asignadas al alumno sin filtrar por estado
+        const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
+
+        if (actAlumno.length > 0) {
+          cacheActividadesPorAlumno[al.codigo] = actAlumno;
+
+          const actividadInicial = actAlumno[0];
+
+          // OPCIONES DESPLEGANDO TODAS LAS ACTIVIDADES Y TAREAS
+          let opcionesActividades = actAlumno.map(act => {
+            const tituloTarea = act.titulo || 'Tarea Asignada';
+            const materiaTarea = act.materia ? ` (${act.materia})` : '';
+            const estadoTarea = act.estado ? ` - [${act.estado}]` : '';
+            return `<option value="${act.id}">${tituloTarea}${materiaTarea}${estadoTarea}</option>`;
+          }).join('');
+
+          html += `
+            <tr id="fila-alumno-${al.codigo}">
+              <td>
+                <strong>${al.nombre}</strong><br>
+                <small style="color:#64748b;">${al.codigo}</small>
+              </td>
+              <td>
+                <label style="font-size: 11px; color: #4a5568; display: block; margin-bottom: 2px;">Seleccionar Tarea:</label>
+                <select id="select-actividad-${al.codigo}" onchange="cambiarActividadSeleccionada('${al.codigo}')" style="padding:6px; border-radius:4px; max-width:240px; width:100%; border:1px solid var(--borde); font-weight:500;">
+                  ${opcionesActividades}
+                </select>
+              </td>
+              <td>
+                <select id="estatus-${al.codigo}" style="padding:6px; border-radius:4px; border:1px solid var(--borde);">
+                  <option value="Pendiente" ${actividadInicial.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                  <option value="Entregado" ${actividadInicial.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                  <option value="No Entregado" ${actividadInicial.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
+                </select>
+              </td>
+              <td>
+                <input type="text" id="obs-${al.codigo}" value="${actividadInicial.observaciones || ''}" placeholder="Agregar nota individual..." style="width:100%; padding:6px; border-radius:4px; border:1px solid var(--borde);">
+              </td>
+              <td>
+                <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="actualizarTarea('${al.codigo}')">Guardar</button>
+              </td>
+            </tr>
+          `;
+        } else {
+          html += `
+            <tr id="fila-alumno-${al.codigo}">
+              <td>
+                <strong>${al.nombre}</strong><br>
+                <small style="color:#64748b;">${al.codigo}</small>
+              </td>
+              <td colspan="4" style="color: #a0aec0; font-style: italic;">Sin tareas asignadas en este trimestre</td>
+            </tr>
+          `;
+        }
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function cambiarActividadSeleccionada(codigoAlumno) {
+      const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
+      const listaActividades = cacheActividadesPorAlumno[codigoAlumno];
+      const actividadObj = listaActividades.find(a => a.id == idActividad);
+
+      if (actividadObj) {
+        document.getElementById(`estatus-${codigoAlumno}`).value = actividadObj.estado || 'Pendiente';
+        document.getElementById(`obs-${codigoAlumno}`).value = actividadObj.observaciones || '';
+      }
+    }
+
+    async function actualizarTarea(codigoAlumno) {
+      const selectActividad = document.getElementById(`select-actividad-${codigoAlumno}`);
+      if (!selectActividad) return;
+
+      const idActividad = selectActividad.value;
+      const nuevoEstado = document.getElementById(`estatus-${codigoAlumno}`).value;
+      const nuevaObs = document.getElementById(`obs-${codigoAlumno}`).value;
+
+      const { error } = await supabaseClient
+        .from('actividades')
+        .update({ 
+          estado: nuevoEstado, 
+          observaciones: nuevaObs 
+        })
+        .eq('id', idActividad);
+
+      if (error) {
+        alert('Error al actualizar: ' + error.message);
+      } else {
+        alert('Calificación guardada correctamente.');
+        cargarAlumnosDelGrupo();
+      }
+    }
+
+    // BANDEJA DE MENSAJES Y CHAT
+    async function cargarBandejaMensajesDocente() {
+      if (!grupoSesion) return;
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
+      const listaContenedor = document.getElementById('listaConversaciones');
+      
+      if (!alumnos || alumnos.length === 0) {
+        listaContenedor.innerHTML = '<div style="padding:20px; font-size:12px; color:#718096; text-align:center;">No hay alumnos registrados en tu grado.</div>';
+        resetearVentanaChat();
+        return;
+      }
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      if (codigoChatDocenteActual && !codigosAlumnos.includes(codigoChatDocenteActual)) {
+        resetearVentanaChat();
+      }
+
+      const { data: mensajes } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .in('alumno_codigo', codigosAlumnos)
+        .order('created_at', { ascending: false });
+
+      if (!mensajes || mensajes.length === 0) {
+        listaContenedor.innerHTML = '<div style="padding:20px; font-size:12px; color:#718096; text-align:center;">No hay mensajes recibidos en este grado.</div>';
+        return;
+      }
+
+      const chatsMap = new Map();
+      mensajes.forEach(m => {
+        if (!chatsMap.has(m.alumno_codigo)) {
+          chatsMap.set(m.alumno_codigo, m);
+        }
+      });
+
+      let htmlLista = '';
+      chatsMap.forEach((ultimoMensaje, codigoAlumno) => {
+        const alumnoObj = alumnos.find(a => a.codigo === codigoAlumno);
+        const nombreAlumno = alumnoObj ? alumnoObj.nombre : codigoAlumno;
+        const tieneNuevo = listaMensajesNuevos.has(codigoAlumno);
+
+        htmlLista += `
+          <div class="chat-item ${codigoChatDocenteActual === codigoAlumno ? 'active' : ''}" onclick="seleccionarChatDocente('${codigoAlumno}', '${nombreAlumno.replace(/'/g, "\\'")}')">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+              <strong style="font-size:13px; color:var(--azul-marino);">${nombreAlumno}</strong>
+              ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+            </div>
+            <p style="font-size:12px; color:#718096; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">
+              ${ultimoMensaje.remitente === 'docente' ? 'Tú: ' : ''}${ultimoMensaje.mensaje || '📎 Adjunto'}
+            </p>
+          </div>
+        `;
+      });
+
+      listaContenedor.innerHTML = htmlLista;
+    }
+
+    function resetearVentanaChat() {
+      codigoChatDocenteActual = null;
+      document.getElementById('headerChatDocente').innerText = 'Selecciona un alumno para chatear';
+      document.getElementById('mensajesDocenteContenedor').innerHTML = '<div style="text-align: center; color: #a0aec0; margin-top: 50px; font-size: 13px;">No hay ningún chat activo seleccionado.</div>';
+      document.getElementById('areaRespuestaChat').style.display = 'none';
+    }
+
+    function escucharNuevosMensajesEnVivo() {
+      supabaseClient
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'mensajes_chat' },
+          async (payload) => {
+            if (payload.new.remitente === 'alumno') {
+              const { data: alumno } = await supabaseClient.from('alumnos').select('grupo').eq('codigo', payload.new.alumno_codigo).single();
+
+              if (alumno && alumno.grupo === grupoSesion) {
+                if (codigoChatDocenteActual === payload.new.alumno_codigo) {
+                  cargarMensajesDocente();
+                } else {
+                  listaMensajesNuevos.add(payload.new.alumno_codigo);
+                  actualizarBadgeNotificaciones();
+                }
+                cargarBandejaMensajesDocente();
+              }
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    function actualizarBadgeNotificaciones() {
+      const badge = document.getElementById('badgeNotificaciones');
+      if (listaMensajesNuevos.size > 0) {
+        badge.innerText = listaMensajesNuevos.size;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.innerText = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    async function seleccionarChatDocente(codigoAlumno, nombreAlumno) {
+      codigoChatDocenteActual = codigoAlumno;
+      listaMensajesNuevos.delete(codigoAlumno);
+      actualizarBadgeNotificaciones();
+
+      document.getElementById('headerChatDocente').innerText = `Atendiendo a: ${nombreAlumno} (${codigoAlumno})`;
+      document.getElementById('areaRespuestaChat').style.display = 'block';
+
+      cargarBandejaMensajesDocente();
+      cargarMensajesDocente();
+    }
+
+    async function cargarMensajesDocente() {
+      if (!codigoChatDocenteActual) return;
+
+      const contenedor = document.getElementById('mensajesDocenteContenedor');
+
+      const { data: mensajes, error } = await supabaseClient
+        .from('mensajes_chat')
+        .select('*')
+        .eq('alumno_codigo', codigoChatDocenteActual)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        contenedor.innerHTML = '<div style="color:red; text-align:center;">Error al cargar mensajes.</div>';
+        return;
+      }
+
+      if (!mensajes || mensajes.length === 0) {
+        contenedor.innerHTML = '<div style="text-align:center; color:#a0aec0; margin-top:50px; font-size:13px;">No hay mensajes registrados.</div>';
+        return;
+      }
+
+      let html = '';
+      mensajes.forEach(m => {
+        const esDocente = m.remitente === 'docente';
+        
+        let contenidoAdjunto = '';
+        if (m.url_archivo) {
+          const urls = m.url_archivo.split(',');
+          urls.forEach(url => {
+            const esImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            const esVid = url.match(/\.(mp4|webm|ogg|mov)$/i);
+
+            if (esImg) {
+              contenidoAdjunto += `<br><img src="${url}" style="max-width:200px; border-radius:6px; margin-top:6px; cursor:pointer;" onclick="window.open('${url}')">`;
+            } else if (esVid) {
+              contenidoAdjunto += `<br><video src="${url}" controls style="max-width:220px; border-radius:6px; margin-top:6px;"></video>`;
+            } else {
+              contenidoAdjunto += `<br><a href="${url}" target="_blank" style="color:${esDocente ? '#d4af37' : '#2b6cb0'}; font-weight:600; font-size:12px;">📎 Ver Archivo Adjunto</a>`;
+            }
+          });
+        }
+
+        html += `
+          <div style="align-self: ${esDocente ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esDocente ? 'var(--azul-marino)' : '#ffffff'}; color: ${esDocente ? '#ffffff' : '#2d3748'}; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${esDocente ? 'none' : '1px solid var(--borde)'};">
+            <small style="display:block; font-size:10px; opacity:0.8; margin-bottom:3px; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
+            <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
+            ${contenidoAdjunto}
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function enviarRespuestaDocente() {
+      const textoInput = document.getElementById('textoDocenteInput');
+      const archivoInput = document.getElementById('adjuntoDocenteInput');
+      const mensaje = textoInput.value.trim();
+      const archivosFiles = archivoInput.files;
+
+      if (!mensaje && archivosFiles.length === 0) {
+        alert('Escribe un mensaje o adjunta un archivo.');
+        return;
+      }
+
+      if (!codigoChatDocenteActual) {
+        alert('Selecciona un chat primero.');
+        return;
+      }
+
+      const urlArchivo = await subirArchivosMultiples(archivosFiles);
+
+      const { error } = await supabaseClient.from('mensajes_chat').insert({
+        alumno_codigo: codigoChatDocenteActual,
+        remitente: 'docente',
+        mensaje: mensaje,
+        url_archivo: urlArchivo
+      });
+
+      if (error) {
+        alert('Error al enviar el mensaje: ' + error.message);
+      } else {
+        textoInput.value = '';
+        archivoInput.value = '';
+        cargarMensajesDocente();
+        cargarBandejaMensajesDocente();
+      }
+    }
+  </script>
+</body>
+</html>
