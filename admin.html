@@ -296,7 +296,7 @@
         </form>
       </div>
 
-      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO (ACTIVIDADES DESPLEGADAS) -->
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO CON BARRA DESPLEGABLE DE ACTIVIDADES -->
       <div class="card">
         <h2>2. Calificación y Observaciones por Alumno</h2>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -326,7 +326,7 @@
 
     </div>
 
-    <!-- PESTAÑA NUEVA: TAREAS Y ACTIVIDADES ASIGNADAS EN EL GRUPO -->
+    <!-- PESTAÑA 2: TAREAS Y ACTIVIDADES ASIGNADAS EN EL GRUPO -->
     <div id="tab-tareas-asignadas" class="tab-content">
       <div class="card">
         <h2>📋 Tareas y Actividades del Grupo</h2>
@@ -418,6 +418,7 @@
     let grupoSesion = null;
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
+    let actividadesCargadas = []; // Almacén global para refrescar selección dinámica
 
     // INICIO DE SESIÓN
     function login() {
@@ -637,7 +638,7 @@
       }
     }
 
-    // CARGAR ALUMNOS DESPLEGANDO TODAS SUS ACTIVIDADES EN LA TABLA
+    // 1. CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>)
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -653,10 +654,11 @@
         return;
       }
 
+      actividadesCargadas = actividades || [];
       let html = '';
 
       alumnos.forEach(al => {
-        const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
+        const actAlumno = actividadesCargadas.filter(a => a.alumno_codigo === al.codigo);
 
         if (actAlumno.length === 0) {
           html += `
@@ -671,42 +673,69 @@
             </tr>
           `;
         } else {
-          actAlumno.forEach((actividad, index) => {
-            html += `
-              <tr id="fila-actividad-${actividad.id}">
-                <td>
-                  ${index === 0 ? `<strong>${al.nombre}</strong><br><small style="color:#64748b;">${al.codigo}</small>` : ''}
-                </td>
-                <td>
-                  <strong>${actividad.titulo || 'Tarea Sin Título'}</strong><br>
-                  <small style="color:#64748b;">${actividad.materia || 'General'} | Límite: ${actividad.fecha || 'Sin fecha'}</small>
-                </td>
-                <td>
-                  <select id="estatus-${actividad.id}" style="padding:4px; border-radius:4px;">
-                    <option value="Pendiente" ${actividad.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                    <option value="Entregado" ${actividad.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
-                    <option value="No Entregado" ${actividad.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
-                  </select>
-                </td>
-                <td>
-                  <input type="text" id="obs-${actividad.id}" value="${actividad.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:4px;">
-                </td>
-                <td>
-                  <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTareaDirecta(${actividad.id})">Guardar</button>
-                </td>
-              </tr>
-            `;
-          });
+          const primeraAct = actAlumno[0];
+
+          let opciones = actAlumno.map(act => `
+            <option value="${act.id}">
+              ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
+            </option>
+          `).join('');
+
+          html += `
+            <tr>
+              <td>
+                <strong>${al.nombre}</strong><br>
+                <small style="color:#64748b;">${al.codigo}</small>
+              </td>
+              <td>
+                <select id="select-actividad-${al.codigo}" onchange="cambiarActividadSeleccionada('${al.codigo}')" style="width:100%; padding:6px; border-radius:4px; border:1px solid #cbd5e1;">
+                  ${opciones}
+                </select>
+                <div id="info-limite-${al.codigo}" style="margin-top:4px;">
+                  <small style="color:#64748b;">${primeraAct.materia || 'General'} | Límite: ${primeraAct.fecha || 'Sin fecha'}</small>
+                </div>
+              </td>
+              <td>
+                <select id="estatus-alumno-${al.codigo}" style="padding:6px; border-radius:4px; border:1px solid #cbd5e1;">
+                  <option value="Pendiente" ${primeraAct.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                  <option value="Entregado" ${primeraAct.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                  <option value="No Entregado" ${primeraAct.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
+                </select>
+              </td>
+              <td>
+                <input type="text" id="obs-alumno-${al.codigo}" value="${primeraAct.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:6px; border-radius:4px; border:1px solid #cbd5e1;">
+              </td>
+              <td>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="guardarEvaluacionAlumno('${al.codigo}')">Guardar</button>
+              </td>
+            </tr>
+          `;
         }
       });
 
       tbody.innerHTML = html;
     }
 
-    // GUARDAR CAMBIOS POR TAREA ESPECÍFICA
-    async function actualizarTareaDirecta(idActividad) {
-      const nuevoEstado = document.getElementById(`estatus-${idActividad}`).value;
-      const nuevaObs = document.getElementById(`obs-${idActividad}`).value;
+    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD
+    function cambiarActividadSeleccionada(codigoAlumno) {
+      const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
+      const idActividad = parseInt(selectAct.value);
+
+      const actividad = actividadesCargadas.find(a => a.id === idActividad);
+      if (!actividad) return;
+
+      document.getElementById(`info-limite-${codigoAlumno}`).innerHTML = 
+        `<small style="color:#64748b;">${actividad.materia || 'General'} | Límite: ${actividad.fecha || 'Sin fecha'}</small>`;
+      
+      document.getElementById(`estatus-alumno-${codigoAlumno}`).value = actividad.estado || 'Pendiente';
+      document.getElementById(`obs-alumno-${codigoAlumno}`).value = actividad.observaciones || '';
+    }
+
+    // 3. GUARDAR CAMBIOS DE LA ACTIVIDAD SELECCIONADA
+    async function guardarEvaluacionAlumno(codigoAlumno) {
+      const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
+      const nuevoEstado = document.getElementById(`estatus-alumno-${codigoAlumno}`).value;
+      const nuevaObs = document.getElementById(`obs-alumno-${codigoAlumno}`).value;
 
       const { error } = await supabaseClient
         .from('actividades')
@@ -717,8 +746,13 @@
         .eq('id', idActividad);
 
       if (error) {
-        alert('Error al actualizar: ' + error.message);
+        alert('Error al actualizar la calificación: ' + error.message);
       } else {
+        const index = actividadesCargadas.findIndex(a => a.id == idActividad);
+        if (index !== -1) {
+          actividadesCargadas[index].estado = nuevoEstado;
+          actividadesCargadas[index].observaciones = nuevaObs;
+        }
         alert('Calificación guardada correctamente.');
       }
     }
