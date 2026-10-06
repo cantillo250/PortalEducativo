@@ -296,16 +296,16 @@
         </form>
       </div>
 
-      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO CON BARRA DESPLEGABLE DE ACTIVIDADES CON [ESTADO] -->
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO (SOLO TAREAS PENDIENTES) -->
       <div class="card">
-        <h2>2. Calificación y Observaciones por Alumno</h2>
+        <h2>2. Calificación y Observaciones por Alumno (Pendientes)</h2>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
           <select id="trimestreBuscar" style="width: 220px; padding: 9px;">
             <option value="1er Trimestre">1er Trimestre</option>
             <option value="2do Trimestre">2do Trimestre</option>
             <option value="3er Trimestre">3er Trimestre</option>
           </select>
-          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Alumnos del Grado</button>
+          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Pendientes del Grado</button>
         </div>
 
         <div id="seccionTablaGrupo" style="display: none; margin-top: 20px; overflow-x: auto;">
@@ -313,7 +313,7 @@
             <thead>
               <tr>
                 <th>Alumno</th>
-                <th>Actividades / Tareas Asignadas</th>
+                <th>Tareas Pendientes Asignadas</th>
                 <th>Estatus</th>
                 <th>Observaciones Individuales</th>
                 <th>Acción</th>
@@ -418,7 +418,7 @@
     let grupoSesion = null;
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
-    let actividadesCargadas = []; // Almacén global para refrescar selección dinámica
+    let actividadesCargadas = []; 
 
     // INICIO DE SESIÓN
     function login() {
@@ -638,16 +638,22 @@
       }
     }
 
-    // 1. CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>) MOSTRANDO [ESTADO]
+    // 1. CARGAR ALUMNOS Y MOSTRAR ÚNICAMENTE LAS ACTIVIDADES CON ESTATUS 'Pendiente'
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
       document.getElementById('seccionTablaGrupo').style.display = 'block';
 
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando alumnos y tareas...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando tareas pendientes...</td></tr>';
 
       const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
-      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre);
+      
+      // Filtrar directamente de Supabase solo las actividades que están "Pendiente"
+      const { data: actividades } = await supabaseClient
+        .from('actividades')
+        .select('*')
+        .eq('trimestre', trimestre)
+        .eq('estado', 'Pendiente');
 
       if (!alumnos || alumnos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron alumnos en el grupo ' + grupoSesion + '</td></tr>';
@@ -658,6 +664,7 @@
       let html = '';
 
       alumnos.forEach(al => {
+        // Filtrar tareas que pertenecen al alumno y que son únicamente pendientes
         const actAlumno = actividadesCargadas.filter(a => a.alumno_codigo === al.codigo);
 
         if (actAlumno.length === 0) {
@@ -667,18 +674,18 @@
                 <strong>${al.nombre}</strong><br>
                 <small style="color:#64748b;">${al.codigo}</small>
               </td>
-              <td colspan="4" style="color: #a0aec0; text-align: center;">
-                <em>Sin tareas o actividades asignadas en este trimestre</em>
+              <td colspan="4" style="color: #2e7d32; text-align: center; font-weight: 500;">
+                <em>¡Al día! No tiene tareas pendientes en este trimestre.</em>
               </td>
             </tr>
           `;
         } else {
           const primeraAct = actAlumno[0];
 
-          // Formateo de las opciones agregando [Estado] entre corchetes
+          // Opciones que contienen únicamente actividades en estado Pendiente
           let opciones = actAlumno.map(act => `
             <option value="${act.id}">
-              [${act.estado || 'Pendiente'}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
+              [Pendiente] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
             </option>
           `).join('');
 
@@ -698,9 +705,9 @@
               </td>
               <td>
                 <select id="estatus-alumno-${al.codigo}" style="padding:6px; border-radius:4px; border:1px solid #cbd5e1;">
-                  <option value="Pendiente" ${primeraAct.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                  <option value="Entregado" ${primeraAct.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
-                  <option value="No Entregado" ${primeraAct.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
+                  <option value="Pendiente" selected>Pendiente</option>
+                  <option value="Entregado">Entregado</option>
+                  <option value="No Entregado">No Entregado</option>
                 </select>
               </td>
               <td>
@@ -717,7 +724,7 @@
       tbody.innerHTML = html;
     }
 
-    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD EN EL MENÚ DESPLEGABLE
+    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD
     function cambiarActividadSeleccionada(codigoAlumno) {
       const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
       const idActividad = parseInt(selectAct.value);
@@ -732,7 +739,7 @@
       document.getElementById(`obs-alumno-${codigoAlumno}`).value = actividad.observaciones || '';
     }
 
-    // 3. GUARDAR CAMBIOS DE LA ACTIVIDAD SELECCIONADA Y ACTUALIZAR TEXTO DEL SELECT EN TIEMPO REAL
+    // 3. GUARDAR CAMBIOS Y REFRESCAR LA LISTA (SI SE CAMBIA A ENTREGADO O NO ENTREGADO, SE REMUEVE DE PENDIENTES)
     async function guardarEvaluacionAlumno(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const nuevoEstado = document.getElementById(`estatus-alumno-${codigoAlumno}`).value;
@@ -749,18 +756,9 @@
       if (error) {
         alert('Error al actualizar la calificación: ' + error.message);
       } else {
-        const index = actividadesCargadas.findIndex(a => a.id == idActividad);
-        if (index !== -1) {
-          actividadesCargadas[index].estado = nuevoEstado;
-          actividadesCargadas[index].observaciones = nuevaObs;
-
-          // Actualiza el texto de la opción visible en el <select> al guardar
-          const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
-          const opcionSeleccionada = selectAct.options[selectAct.selectedIndex];
-          const act = actividadesCargadas[index];
-          opcionSeleccionada.text = `[${nuevoEstado}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})`;
-        }
         alert('Calificación guardada correctamente.');
+        // Recargar la lista para reflejar únicamente los pendientes que restan
+        cargarAlumnosDelGrupo();
       }
     }
 
