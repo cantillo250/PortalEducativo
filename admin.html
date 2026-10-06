@@ -296,7 +296,7 @@
         </form>
       </div>
 
-      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO CON BARRA DESPLEGABLE DE ACTIVIDADES -->
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO CON BARRA DESPLEGABLE DE ACTIVIDADES CON [ESTADO] -->
       <div class="card">
         <h2>2. Calificación y Observaciones por Alumno</h2>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -638,7 +638,7 @@
       }
     }
 
-    // 1. CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>)
+    // 1. CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>) MOSTRANDO [ESTADO]
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -675,9 +675,10 @@
         } else {
           const primeraAct = actAlumno[0];
 
+          // Formateo de las opciones agregando [Estado] entre corchetes
           let opciones = actAlumno.map(act => `
             <option value="${act.id}">
-              ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
+              [${act.estado || 'Pendiente'}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
             </option>
           `).join('');
 
@@ -716,7 +717,7 @@
       tbody.innerHTML = html;
     }
 
-    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD
+    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD EN EL MENÚ DESPLEGABLE
     function cambiarActividadSeleccionada(codigoAlumno) {
       const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
       const idActividad = parseInt(selectAct.value);
@@ -731,7 +732,7 @@
       document.getElementById(`obs-alumno-${codigoAlumno}`).value = actividad.observaciones || '';
     }
 
-    // 3. GUARDAR CAMBIOS DE LA ACTIVIDAD SELECCIONADA
+    // 3. GUARDAR CAMBIOS DE LA ACTIVIDAD SELECCIONADA Y ACTUALIZAR TEXTO DEL SELECT EN TIEMPO REAL
     async function guardarEvaluacionAlumno(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const nuevoEstado = document.getElementById(`estatus-alumno-${codigoAlumno}`).value;
@@ -752,6 +753,12 @@
         if (index !== -1) {
           actividadesCargadas[index].estado = nuevoEstado;
           actividadesCargadas[index].observaciones = nuevaObs;
+
+          // Actualiza el texto de la opción visible en el <select> al guardar
+          const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
+          const opcionSeleccionada = selectAct.options[selectAct.selectedIndex];
+          const act = actividadesCargadas[index];
+          opcionSeleccionada.text = `[${nuevoEstado}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})`;
         }
         alert('Calificación guardada correctamente.');
       }
