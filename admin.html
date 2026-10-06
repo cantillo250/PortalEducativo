@@ -34,6 +34,44 @@
     }
     header h1 { font-weight: 600; font-size: 24px; letter-spacing: 0.5px; }
 
+    /* CONTENEDOR DE NOTIFICACIONES FLOTANTES */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* TARJETA TOAST DE MENSAJE RECIBIDO */
+    .toast-notif {
+      background-color: #ffffff;
+      color: var(--texto-oscuro);
+      border-left: 5px solid var(--vino-granate);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      padding: 14px 18px;
+      border-radius: 8px;
+      min-width: 280px;
+      max-width: 350px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      cursor: pointer;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+
     /* LOGIN */
     .login-container { 
       max-width: 440px; 
@@ -178,6 +216,9 @@
   </style>
 </head>
 <body>
+
+  <!-- CONTENEDOR FLOTANTE PARA NOTIFICACIONES -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <header>
     <h1>Panel Docente - Colegio Frida Kahlo</h1>
@@ -830,6 +871,73 @@
       document.getElementById('areaRespuestaChat').style.display = 'none';
     }
 
+    // SONIDO Y NOTIFICACIÓN EMERGENTE (TOAST)
+    function reproducirSonidoNotificacion() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Nota D5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12); // Nota A5
+
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {
+        console.log("Audio no reproducido por restricciones del navegador.");
+      }
+    }
+
+    function mostrarNotificacionToast(codigoAlumno, nombreAlumno, mensajeTexto) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-notif';
+      
+      const textoCorto = mensajeTexto ? mensajeTexto : '📎 Adjuntó un archivo/material';
+      const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      toast.innerHTML = `
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 13px; color: var(--azul-marino);">💬 Nuevo mensaje: ${nombreAlumno}</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 2px;">${textoCorto}</div>
+          <div style="font-size: 10px; color: #a0aec0; margin-top: 4px;">${horaActual}</div>
+        </div>
+        <button onclick="event.stopPropagation(); cerrarToast(this.parentElement)" style="background:none; border:none; color:#a0aec0; font-size:16px; cursor:pointer; margin-left:10px;">&times;</button>
+      `;
+
+      // Abrir el chat del alumno directamente al hacer clic en el aviso
+      toast.onclick = () => {
+        openTabDocente('tab-chat-docente', document.querySelectorAll('.nav-btn')[2]);
+        seleccionarChatDocente(codigoAlumno, nombreAlumno);
+        cerrarToast(toast);
+      };
+
+      container.appendChild(toast);
+      reproducirSonidoNotificacion();
+
+      setTimeout(() => {
+        cerrarToast(toast);
+      }, 5000);
+    }
+
+    function cerrarToast(toastElement) {
+      if (!toastElement || toastElement.dataset.closing) return;
+      toastElement.dataset.closing = "true";
+      toastElement.style.animation = 'fadeOut 0.3s forwards';
+      setTimeout(() => {
+        toastElement.remove();
+      }, 300);
+    }
+
     function escucharNuevosMensajesEnVivo() {
       supabaseClient
         .channel('schema-db-changes')
@@ -838,7 +946,11 @@
           { event: 'INSERT', schema: 'public', table: 'mensajes_chat' },
           async (payload) => {
             if (payload.new.remitente === 'alumno') {
-              const { data: alumno } = await supabaseClient.from('alumnos').select('grupo').eq('codigo', payload.new.alumno_codigo).single();
+              const { data: alumno } = await supabaseClient
+                .from('alumnos')
+                .select('grupo, nombre')
+                .eq('codigo', payload.new.alumno_codigo)
+                .single();
 
               if (alumno && alumno.grupo === grupoSesion) {
                 if (codigoChatDocenteActual === payload.new.alumno_codigo) {
@@ -846,6 +958,12 @@
                 } else {
                   listaMensajesNuevos.add(payload.new.alumno_codigo);
                   actualizarBadgeNotificaciones();
+
+                  mostrarNotificacionToast(
+                    payload.new.alumno_codigo, 
+                    alumno.nombre || payload.new.alumno_codigo, 
+                    payload.new.mensaje
+                  );
                 }
                 cargarBandejaMensajesDocente();
               }
