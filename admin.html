@@ -236,6 +236,7 @@
     <!-- PESTAÑAS -->
     <div class="nav-tabs">
       <button class="nav-btn active" onclick="openTabDocente('tab-gestion', this)">📚 Control Académico</button>
+      <button class="nav-btn" onclick="openTabDocente('tab-tareas-asignadas', this)">📋 Tareas Asignadas</button>
       <button class="nav-btn" onclick="openTabDocente('tab-chat-docente', this)">
         💬 Mensajes Recibidos
         <span id="badgeNotificaciones" class="badge-notif">0</span>
@@ -325,7 +326,42 @@
 
     </div>
 
-    <!-- PESTAÑA 2: BANDEJA DE MENSAJES AUTOMÁTICA -->
+    <!-- PESTAÑA NUEVA: TAREAS Y ACTIVIDADES ASIGNADAS EN EL GRUPO -->
+    <div id="tab-tareas-asignadas" class="tab-content">
+      <div class="card">
+        <h2>📋 Tareas y Actividades del Grupo</h2>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+          <select id="filtroTrimestreTareas" style="width: 220px; padding: 9px;" onchange="cargarTareasGrupo()">
+            <option value="1er Trimestre">1er Trimestre</option>
+            <option value="2do Trimestre">2do Trimestre</option>
+            <option value="3er Trimestre">3er Trimestre</option>
+          </select>
+          <button class="btn" onclick="cargarTareasGrupo()">Actualizar Lista</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Título / Asignatura</th>
+                <th>Trimestre</th>
+                <th>Fecha Límite</th>
+                <th>Instrucciones / Observaciones</th>
+                <th>Material Adjunto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaTareasGrupo">
+              <tr>
+                <td colspan="6" style="text-align:center;">Selecciona un trimestre o presiona Actualizar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: BANDEJA DE MENSAJES AUTOMÁTICA -->
     <div id="tab-chat-docente" class="tab-content">
       <div class="card">
         <h2>💬 Mensajería Automática de Mi Grado</h2>
@@ -444,6 +480,8 @@
 
       if (tabId === 'tab-chat-docente') {
         cargarBandejaMensajesDocente();
+      } else if (tabId === 'tab-tareas-asignadas') {
+        cargarTareasGrupo();
       }
     }
 
@@ -505,6 +543,102 @@
         alert(`¡Éxito! Tarea asignada a los ${alumnos.length} alumnos del grupo ${grupo}.`);
         document.getElementById('actividadGrupoForm').reset();
         document.getElementById('grupoInput').value = grupoSesion;
+        cargarTareasGrupo();
+      }
+    }
+
+    // LISTAR TAREAS ASIGNADAS AL GRUPO
+    async function cargarTareasGrupo() {
+      const trimestre = document.getElementById('filtroTrimestreTareas').value;
+      const tbody = document.getElementById('cuerpoTablaTareasGrupo');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando tareas del grupo...</td></tr>';
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupoSesion);
+
+      if (!alumnos || alumnos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay alumnos registrados en este grupo.</td></tr>';
+        return;
+      }
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      const { data: actividades, error } = await supabaseClient
+        .from('actividades')
+        .select('*')
+        .eq('trimestre', trimestre)
+        .in('alumno_codigo', codigosAlumnos)
+        .order('fecha', { ascending: true });
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Error al cargar las tareas.</td></tr>';
+        return;
+      }
+
+      if (!actividades || actividades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay tareas asignadas para este trimestre.</td></tr>';
+        return;
+      }
+
+      // Agrupar actividades por Título + Fecha + Materia para evitar filas duplicadas por alumno
+      const tareasUnicas = new Map();
+
+      actividades.forEach(act => {
+        const clave = `${act.titulo}_${act.fecha}_${act.materia}`;
+        if (!tareasUnicas.has(clave)) {
+          tareasUnicas.set(clave, act);
+        }
+      });
+
+      let html = '';
+      tareasUnicas.forEach((tarea) => {
+        let adjuntosHTML = '<span style="color:#a0aec0;">Sin adjuntos</span>';
+        if (tarea.url_archivo) {
+          const urls = tarea.url_archivo.split(',');
+          adjuntosHTML = urls.map((url, i) => 
+            `<a href="${url}" target="_blank" style="color:var(--azul-rey); font-weight:600; display:block; font-size:12px;">📎 Adjunto ${i+1}</a>`
+          ).join('');
+        }
+
+        html += `
+          <tr>
+            <td>
+              <strong>${tarea.titulo}</strong><br>
+              <small style="color:#64748b;">${tarea.materia}</small>
+            </td>
+            <td>${tarea.trimestre}</td>
+            <td>${tarea.fecha || 'Sin fecha'}</td>
+            <td>${tarea.observaciones || '<em>Sin observaciones</em>'}</td>
+            <td>${adjuntosHTML}</td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarTareaGrupo('${tarea.titulo}', '${tarea.trimestre}')">Eliminar Tarea</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    async function eliminarTareaGrupo(titulo, trimestre) {
+      if (!confirm(`¿Estás seguro de que deseas eliminar la tarea "${titulo}" de todo el grupo?`)) return;
+
+      const { data: alumnos } = await supabaseClient.from('alumnos').select('codigo').eq('grupo', grupoSesion);
+      if (!alumnos || alumnos.length === 0) return;
+
+      const codigosAlumnos = alumnos.map(a => a.codigo);
+
+      const { error } = await supabaseClient
+        .from('actividades')
+        .delete()
+        .eq('titulo', titulo)
+        .eq('trimestre', trimestre)
+        .in('alumno_codigo', codigosAlumnos);
+
+      if (error) {
+        alert('Error al eliminar la tarea: ' + error.message);
+      } else {
+        alert('Tarea eliminada para todo el grupo.');
+        cargarTareasGrupo();
       }
     }
 
@@ -542,7 +676,6 @@
             `<option value="${act.id}">${act.titulo || act.materia || 'Tarea Asignada'}</option>`
           ).join('');
 
-          // SE AÑADIÓ LA OPCIÓN "NO ENTREGADO" EN EL SELECT
           html += `
             <tr id="fila-alumno-${al.codigo}">
               <td>
