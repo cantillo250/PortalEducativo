@@ -326,7 +326,7 @@
 
     </div>
 
-    <!-- PESTAÑA NUEVA: TAREAS Y ACTIVIDADES ASIGNADAS EN EL GRUPO -->
+    <!-- PESTAÑA TAREAS Y ACTIVIDADES ASIGNADAS EN EL GRUPO -->
     <div id="tab-tareas-asignadas" class="tab-content">
       <div class="card">
         <h2>📋 Tareas y Actividades del Grupo</h2>
@@ -395,7 +395,6 @@
               
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
-                  <!-- SELECCIÓN MÚLTIPLE DE ARCHIVOS EN CHAT -->
                   <input type="file" id="adjuntoDocenteInput" accept="image/*,video/*,application/pdf" multiple style="font-size: 12px;">
                 </div>
                 <button class="btn btn-success" onclick="enviarRespuestaDocente()">Enviar Respuesta</button>
@@ -485,7 +484,6 @@
       }
     }
 
-    // FUNCIÓN PARA SUBIR MÚLTIPLES ARCHIVOS Y OBTENER SUS URLS
     async function subirArchivosMultiples(archivos) {
       if (!archivos || archivos.length === 0) return null;
       
@@ -503,7 +501,6 @@
       return urls.length > 0 ? urls.join(',') : null;
     }
 
-    // GESTIÓN ACADÉMICA
     async function crearTareaParaGrupo(e) {
       e.preventDefault();
       const trimestre = document.getElementById('trimestreInput').value;
@@ -521,7 +518,6 @@
         return;
       }
 
-      // Subida de múltiples archivos
       const urlArchivo = await subirArchivosMultiples(archivosFiles);
 
       const registros = alumnos.map(al => ({
@@ -547,7 +543,6 @@
       }
     }
 
-    // LISTAR TAREAS ASIGNADAS AL GRUPO
     async function cargarTareasGrupo() {
       const trimestre = document.getElementById('filtroTrimestreTareas').value;
       const tbody = document.getElementById('cuerpoTablaTareasGrupo');
@@ -579,7 +574,6 @@
         return;
       }
 
-      // Agrupar actividades por Título + Fecha + Materia para evitar filas duplicadas por alumno
       const tareasUnicas = new Map();
 
       actividades.forEach(act => {
@@ -642,7 +636,7 @@
       }
     }
 
-    // CARGAR ALUMNOS CON SELECTOR DE ACTIVIDAD Y ESTATUS "NO ENTREGADO"
+    // CARGAR ALUMNOS DESPLEGANDO TODAS LAS ACTIVIDADES Y TAREAS ASIGNADAS
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -662,19 +656,20 @@
       let html = '';
 
       alumnos.forEach(al => {
+        // Obtenemos TODAS las actividades y tareas asignadas al alumno (Pendiente, Entregado y No Entregado)
         const actAlumno = actividades ? actividades.filter(a => a.alumno_codigo === al.codigo) : [];
 
-        // Muestra actividades que estén pendientes o marcadas como No Entregado
-        const actPendientes = actAlumno.filter(a => (a.estado || 'Pendiente') !== 'Entregado');
+        if (actAlumno.length > 0) {
+          cacheActividadesPorAlumno[al.codigo] = actAlumno;
 
-        if (actPendientes.length > 0) {
-          cacheActividadesPorAlumno[al.codigo] = actPendientes;
+          const actividadInicial = actAlumno[0];
 
-          const actividadInicial = actPendientes[0];
-
-          let opcionesActividades = actPendientes.map(act => 
-            `<option value="${act.id}">${act.titulo || act.materia || 'Tarea Asignada'}</option>`
-          ).join('');
+          // Se muestran TODAS las opciones asignadas en la barra desplegable
+          let opcionesActividades = actAlumno.map(act => {
+            const tituloTarea = act.titulo || act.materia || 'Tarea Asignada';
+            const estadoTarea = act.estado ? ` - [${act.estado}]` : '';
+            return `<option value="${act.id}">${tituloTarea}${estadoTarea}</option>`;
+          }).join('');
 
           html += `
             <tr id="fila-alumno-${al.codigo}">
@@ -683,29 +678,39 @@
                 <small style="color:#64748b;">${al.codigo}</small>
               </td>
               <td>
-                <select id="select-actividad-${al.codigo}" onchange="cambiarActividadSeleccionada('${al.codigo}')" style="padding:5px; border-radius:4px; max-width:200px; width:100%;">
+                <select id="select-actividad-${al.codigo}" onchange="cambiarActividadSeleccionada('${al.codigo}')" style="padding:6px; border-radius:4px; max-width:220px; width:100%; border:1px solid var(--borde); font-weight:500;">
                   ${opcionesActividades}
                 </select>
               </td>
               <td>
-                <select id="estatus-${al.codigo}" style="padding:4px; border-radius:4px;">
+                <select id="estatus-${al.codigo}" style="padding:6px; border-radius:4px; border:1px solid var(--borde);">
                   <option value="Pendiente" ${actividadInicial.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                   <option value="Entregado" ${actividadInicial.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
                   <option value="No Entregado" ${actividadInicial.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
                 </select>
               </td>
               <td>
-                <input type="text" id="obs-${al.codigo}" value="${actividadInicial.observaciones || ''}" placeholder="Agregar nota..." style="width:100%; padding:4px;">
+                <input type="text" id="obs-${al.codigo}" value="${actividadInicial.observaciones || ''}" placeholder="Agregar nota individual..." style="width:100%; padding:6px; border-radius:4px; border:1px solid var(--borde);">
               </td>
               <td>
-                <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="actualizarTarea('${al.codigo}')">Guardar</button>
+                <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="actualizarTarea('${al.codigo}')">Guardar</button>
               </td>
+            </tr>
+          `;
+        } else {
+          html += `
+            <tr id="fila-alumno-${al.codigo}">
+              <td>
+                <strong>${al.nombre}</strong><br>
+                <small style="color:#64748b;">${al.codigo}</small>
+              </td>
+              <td colspan="4" style="color: #a0aec0; font-style: italic;">Sin tareas asignadas en este trimestre</td>
             </tr>
           `;
         }
       });
 
-      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">No hay tareas pendientes en este trimestre.</td></tr>';
+      tbody.innerHTML = html;
     }
 
     function cambiarActividadSeleccionada(codigoAlumno) {
@@ -720,7 +725,10 @@
     }
 
     async function actualizarTarea(codigoAlumno) {
-      const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
+      const selectElem = document.getElementById(`select-actividad-${codigoAlumno}`);
+      if (!selectElem) return;
+
+      const idActividad = selectElem.value;
       const nuevoEstado = document.getElementById(`estatus-${codigoAlumno}`).value;
       const nuevaObs = document.getElementById(`obs-${codigoAlumno}`).value;
 
@@ -785,7 +793,7 @@
 
         htmlLista += `
           <div class="chat-item ${codigoChatDocenteActual === codigoAlumno ? 'active' : ''}" onclick="seleccionarChatDocente('${codigoAlumno}', '${nombreAlumno.replace(/'/g, "\\'")}')">
-            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+            <div style="display:flex; justify- continental; align-items: center; margin-bottom: 3px;">
               <strong style="font-size:13px; color:var(--azul-marino);">${nombreAlumno}</strong>
               ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
             </div>
@@ -854,7 +862,6 @@
       cargarMensajesDocente();
     }
 
-    // CARGAR Y VISUALIZAR MÚLTIPLES ARCHIVOS ADJUNTOS EN EL CHAT
     async function cargarMensajesDocente() {
       if (!codigoChatDocenteActual) return;
 
@@ -910,7 +917,6 @@
       contenedor.scrollTop = contenedor.scrollHeight;
     }
 
-    // ENVIAR RESPUESTA CON SOPORTE PARA MÚLTIPLES ADJUNTOS
     async function enviarRespuestaDocente() {
       const textoInput = document.getElementById('textoDocenteInput');
       const archivoInput = document.getElementById('adjuntoDocenteInput');
