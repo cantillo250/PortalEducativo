@@ -162,6 +162,8 @@
       cursor: pointer; 
       font-size: 14px; 
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
     }
     .nav-btn:hover { background: #cbd5e1; color: var(--azul-marino); }
     .nav-btn.active { 
@@ -170,16 +172,23 @@
       border-bottom: 3px solid var(--dorado); 
     }
 
+    /* CIRCULO INDICADOR ROJO PARA LA PESTAÑA */
     .badge-notif { 
       display: none; 
-      background-color: var(--vino-granate); 
-      color: white; 
+      align-items: center; 
+      justify-content: center; 
+      background-color: #e53e3e; /* Rojo brillante */
+      color: #ffffff; 
       font-size: 11px; 
-      padding: 2px 7px; 
-      border-radius: 10px; 
-      margin-left: 6px; 
-      font-weight: 600; 
+      font-weight: 700; 
+      width: 20px; 
+      height: 20px; 
+      border-radius: 50%; /* Círculo perfecto */
+      margin-left: 8px; 
+      border: 2px solid #ffffff; 
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); 
     }
+
     .badge-nuevo { 
       background-color: var(--vino-granate); 
       color: white; 
@@ -337,7 +346,7 @@
         </form>
       </div>
 
-      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO CON BARRA DESPLEGABLE DE ACTIVIDADES CON [ESTADO] -->
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO -->
       <div class="card">
         <h2>2. Calificación y Observaciones por Alumno</h2>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -459,7 +468,7 @@
     let grupoSesion = null;
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
-    let actividadesCargadas = []; // Almacén global para refrescar selección dinámica
+    let actividadesCargadas = [];
 
     // INICIO DE SESIÓN
     function login() {
@@ -679,7 +688,7 @@
       }
     }
 
-    // 1. CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>) MOSTRANDO [ESTADO]
+    // CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>)
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -716,7 +725,6 @@
         } else {
           const primeraAct = actAlumno[0];
 
-          // Formateo de las opciones agregando [Estado] entre corchetes
           let opciones = actAlumno.map(act => `
             <option value="${act.id}">
               [${act.estado || 'Pendiente'}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
@@ -758,7 +766,6 @@
       tbody.innerHTML = html;
     }
 
-    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD EN EL MENÚ DESPLEGABLE
     function cambiarActividadSeleccionada(codigoAlumno) {
       const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
       const idActividad = parseInt(selectAct.value);
@@ -773,7 +780,6 @@
       document.getElementById(`obs-alumno-${codigoAlumno}`).value = actividad.observaciones || '';
     }
 
-    // 3. GUARDAR CAMBIOS DE LA ACTIVIDAD SELECCIONADA Y ACTUALIZAR TEXTO DEL SELECT EN TIEMPO REAL
     async function guardarEvaluacionAlumno(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const nuevoEstado = document.getElementById(`estatus-alumno-${codigoAlumno}`).value;
@@ -795,7 +801,6 @@
           actividadesCargadas[index].estado = nuevoEstado;
           actividadesCargadas[index].observaciones = nuevaObs;
 
-          // Actualiza el texto de la opción visible en el <select> al guardar
           const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
           const opcionSeleccionada = selectAct.options[selectAct.selectedIndex];
           const act = actividadesCargadas[index];
@@ -973,11 +978,14 @@
         .subscribe();
     }
 
+    // ACTUALIZA EL CÍRCULO ROJO EN LA PESTAÑA
     function actualizarBadgeNotificaciones() {
       const badge = document.getElementById('badgeNotificaciones');
+      if (!badge) return;
+
       if (listaMensajesNuevos.size > 0) {
         badge.innerText = listaMensajesNuevos.size;
-        badge.style.display = 'inline-block';
+        badge.style.display = 'inline-flex';
       } else {
         badge.innerText = '0';
         badge.style.display = 'none';
