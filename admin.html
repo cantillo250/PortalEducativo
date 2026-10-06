@@ -34,44 +34,6 @@
     }
     header h1 { font-weight: 600; font-size: 24px; letter-spacing: 0.5px; }
 
-    /* CONTENEDOR DE NOTIFICACIONES FLOTANTES */
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* TARJETA TOAST DE MENSAJE RECIBIDO */
-    .toast-notif {
-      background-color: #ffffff;
-      color: var(--texto-oscuro);
-      border-left: 5px solid var(--vino-granate);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      padding: 14px 18px;
-      border-radius: 8px;
-      min-width: 280px;
-      max-width: 350px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-      cursor: pointer;
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(120%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-
-    @keyframes fadeOut {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(120%); opacity: 0; }
-    }
-
     /* LOGIN */
     .login-container { 
       max-width: 440px; 
@@ -162,8 +124,7 @@
       cursor: pointer; 
       font-size: 14px; 
       transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
+      position: relative;
     }
     .nav-btn:hover { background: #cbd5e1; color: var(--azul-marino); }
     .nav-btn.active { 
@@ -172,30 +133,30 @@
       border-bottom: 3px solid var(--dorado); 
     }
 
-    /* CIRCULO INDICADOR ROJO PARA LA PESTAÑA */
     .badge-notif { 
       display: none; 
-      align-items: center; 
-      justify-content: center; 
-      background-color: #e53e3e; /* Rojo brillante */
-      color: #ffffff; 
+      background-color: #e53e3e; 
+      color: white; 
       font-size: 11px; 
-      font-weight: 700; 
-      width: 20px; 
-      height: 20px; 
-      border-radius: 50%; /* Círculo perfecto */
-      margin-left: 8px; 
-      border: 2px solid #ffffff; 
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); 
+      padding: 2px 7px; 
+      border-radius: 10px; 
+      margin-left: 6px; 
+      font-weight: 600; 
+      animation: pulse 1.5s infinite;
     }
-
     .badge-nuevo { 
-      background-color: var(--vino-granate); 
+      background-color: #e53e3e; 
       color: white; 
       font-size: 10px; 
       padding: 2px 6px; 
       border-radius: 4px; 
       font-weight: 600; 
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
     }
 
     /* TABLAS */
@@ -222,12 +183,17 @@
     .chat-item:hover { background-color: #edf2f7; }
     .chat-item.active { background-color: #e2e8f0; border-left: 4px solid var(--vino-granate); }
     .chat-window { width: 65%; display: flex; flex-direction: column; }
+    
+    .msg-hora {
+      display: block;
+      font-size: 10px;
+      margin-top: 4px;
+      text-align: right;
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
-
-  <!-- CONTENEDOR FLOTANTE PARA NOTIFICACIONES -->
-  <div id="toastContainer" class="toast-container"></div>
 
   <header>
     <h1>Panel Docente - Colegio Frida Kahlo</h1>
@@ -291,7 +257,6 @@
         💬 Mensajes Recibidos
         <span id="badgeNotificaciones" class="badge-notif">0</span>
       </button>
-      <button class="nav-btn" onclick="openTabDocente('tab-contacto-docente', this)">📥 Panel Contacto</button>
     </div>
 
     <!-- PESTAÑA 1: CONTROL ACADÉMICO -->
@@ -347,16 +312,16 @@
         </form>
       </div>
 
-      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO -->
+      <!-- 2. EVALUACIÓN Y NOTAS POR ALUMNO (SOLO TAREAS PENDIENTES) -->
       <div class="card">
-        <h2>2. Calificación y Observaciones por Alumno</h2>
+        <h2>2. Calificación y Observaciones por Alumno (Pendientes)</h2>
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
           <select id="trimestreBuscar" style="width: 220px; padding: 9px;">
             <option value="1er Trimestre">1er Trimestre</option>
             <option value="2do Trimestre">2do Trimestre</option>
             <option value="3er Trimestre">3er Trimestre</option>
           </select>
-          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Alumnos del Grado</button>
+          <button class="btn" onclick="cargarAlumnosDelGrupo()">Cargar Pendientes del Grado</button>
         </div>
 
         <div id="seccionTablaGrupo" style="display: none; margin-top: 20px; overflow-x: auto;">
@@ -364,7 +329,7 @@
             <thead>
               <tr>
                 <th>Alumno</th>
-                <th>Actividades / Tareas Asignadas</th>
+                <th>Tareas Pendientes Asignadas</th>
                 <th>Estatus</th>
                 <th>Observaciones Individuales</th>
                 <th>Acción</th>
@@ -457,31 +422,6 @@
       </div>
     </div>
 
-    <!-- PESTAÑA 4: PANEL CONTACTO (CON FECHA Y HORA) -->
-    <div id="tab-contacto-docente" class="tab-content">
-      <div class="card">
-        <h2>📥 Mensajes de Contacto Recibidos</h2>
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha y Hora</th>
-                <th>Remitente / Alumno</th>
-                <th>Mensaje</th>
-                <th>Adjuntos</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="cuerpoTablaContacto">
-              <tr>
-                <td colspan="5" style="text-align:center;">Cargando mensajes de contacto...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <script>
@@ -494,20 +434,13 @@
     let grupoSesion = null;
     let codigoChatDocenteActual = null;
     let listaMensajesNuevos = new Set();
-    let actividadesCargadas = [];
+    let actividadesCargadas = []; 
 
-    // FORMATEAR FECHA Y HORA (Ej: 05/10/2026, 09:30 PM)
-    function formatearFechaHora(fechaIso) {
-      if (!fechaIso) return 'Sin fecha';
+    // FUNCIÓN AUXILIAR PARA FORMATEAR LA HORA DE LOS MENSAJES
+    function formatearHora(fechaIso) {
+      if (!fechaIso) return '';
       const fecha = new Date(fechaIso);
-      return fecha.toLocaleString('es-MX', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     // INICIO DE SESIÓN
@@ -571,8 +504,6 @@
         cargarBandejaMensajesDocente();
       } else if (tabId === 'tab-tareas-asignadas') {
         cargarTareasGrupo();
-      } else if (tabId === 'tab-contacto-docente') {
-        cargarMensajesContacto();
       }
     }
 
@@ -730,16 +661,21 @@
       }
     }
 
-    // CARGAR ALUMNOS Y ACTIVIDADES EN MENÚ DESPLEGABLE (<SELECT>)
+    // CARGAR ALUMNOS Y ACTIVIDADES PENDIENTES
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
       document.getElementById('seccionTablaGrupo').style.display = 'block';
 
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando alumnos y tareas...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando tareas pendientes...</td></tr>';
 
       const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
-      const { data: actividades } = await supabaseClient.from('actividades').select('*').eq('trimestre', trimestre);
+      
+      const { data: actividades } = await supabaseClient
+        .from('actividades')
+        .select('*')
+        .eq('trimestre', trimestre)
+        .eq('estado', 'Pendiente');
 
       if (!alumnos || alumnos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron alumnos en el grupo ' + grupoSesion + '</td></tr>';
@@ -759,8 +695,8 @@
                 <strong>${al.nombre}</strong><br>
                 <small style="color:#64748b;">${al.codigo}</small>
               </td>
-              <td colspan="4" style="color: #a0aec0; text-align: center;">
-                <em>Sin tareas o actividades asignadas en este trimestre</em>
+              <td colspan="4" style="color: #2e7d32; text-align: center; font-weight: 500;">
+                <em>¡Al día! No tiene tareas pendientes en este trimestre.</em>
               </td>
             </tr>
           `;
@@ -769,7 +705,7 @@
 
           let opciones = actAlumno.map(act => `
             <option value="${act.id}">
-              [${act.estado || 'Pendiente'}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
+              [Pendiente] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
             </option>
           `).join('');
 
@@ -789,9 +725,9 @@
               </td>
               <td>
                 <select id="estatus-alumno-${al.codigo}" style="padding:6px; border-radius:4px; border:1px solid #cbd5e1;">
-                  <option value="Pendiente" ${primeraAct.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                  <option value="Entregado" ${primeraAct.estado === 'Entregado' ? 'selected' : ''}>Entregado</option>
-                  <option value="No Entregado" ${primeraAct.estado === 'No Entregado' ? 'selected' : ''}>No Entregado</option>
+                  <option value="Pendiente" selected>Pendiente</option>
+                  <option value="Entregado">Entregado</option>
+                  <option value="No Entregado">No Entregado</option>
                 </select>
               </td>
               <td>
@@ -838,21 +774,12 @@
       if (error) {
         alert('Error al actualizar la calificación: ' + error.message);
       } else {
-        const index = actividadesCargadas.findIndex(a => a.id == idActividad);
-        if (index !== -1) {
-          actividadesCargadas[index].estado = nuevoEstado;
-          actividadesCargadas[index].observaciones = nuevaObs;
-
-          const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
-          const opcionSeleccionada = selectAct.options[selectAct.selectedIndex];
-          const act = actividadesCargadas[index];
-          opcionSeleccionada.text = `[${nuevoEstado}] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})`;
-        }
         alert('Calificación guardada correctamente.');
+        cargarAlumnosDelGrupo();
       }
     }
 
-    // BANDEJA DE MENSAJES Y CHAT
+    // BANDEJA DE MENSAJES Y CHAT CON MOSTRADO DE HORA Y NOTIFICACIONES
     async function cargarBandejaMensajesDocente() {
       if (!grupoSesion) return;
 
@@ -894,12 +821,16 @@
         const alumnoObj = alumnos.find(a => a.codigo === codigoAlumno);
         const nombreAlumno = alumnoObj ? alumnoObj.nombre : codigoAlumno;
         const tieneNuevo = listaMensajesNuevos.has(codigoAlumno);
+        const horaFormateada = formatearHora(ultimoMensaje.created_at);
 
         htmlLista += `
           <div class="chat-item ${codigoChatDocenteActual === codigoAlumno ? 'active' : ''}" onclick="seleccionarChatDocente('${codigoAlumno}', '${nombreAlumno.replace(/'/g, "\\'")}')">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
               <strong style="font-size:13px; color:var(--azul-marino);">${nombreAlumno}</strong>
-              ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+              <div style="display:flex; align-items:center; gap:5px;">
+                <span style="font-size:10px; color:#a0aec0;">${horaFormateada}</span>
+                ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+              </div>
             </div>
             <p style="font-size:12px; color:#718096; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">
               ${ultimoMensaje.remitente === 'docente' ? 'Tú: ' : ''}${ultimoMensaje.mensaje || '📎 Adjunto'}
@@ -918,73 +849,7 @@
       document.getElementById('areaRespuestaChat').style.display = 'none';
     }
 
-    // SONIDO Y NOTIFICACIÓN EMERGENTE (TOAST)
-    function reproducirSonidoNotificacion() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Nota D5
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12); // Nota A5
-
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.35);
-      } catch (e) {
-        console.log("Audio no reproducido por restricciones del navegador.");
-      }
-    }
-
-    function mostrarNotificacionToast(codigoAlumno, nombreAlumno, mensajeTexto) {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-
-      const toast = document.createElement('div');
-      toast.className = 'toast-notif';
-      
-      const textoCorto = mensajeTexto ? mensajeTexto : '📎 Adjuntó un archivo/material';
-      const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      toast.innerHTML = `
-        <div style="flex: 1;">
-          <div style="font-weight: 600; font-size: 13px; color: var(--azul-marino);">💬 Nuevo mensaje: ${nombreAlumno}</div>
-          <div style="font-size: 12px; color: #4a5568; margin-top: 2px;">${textoCorto}</div>
-          <div style="font-size: 10px; color: #a0aec0; margin-top: 4px;">${horaActual}</div>
-        </div>
-        <button onclick="event.stopPropagation(); cerrarToast(this.parentElement)" style="background:none; border:none; color:#a0aec0; font-size:16px; cursor:pointer; margin-left:10px;">&times;</button>
-      `;
-
-      // Abrir el chat del alumno directamente al hacer clic en el aviso
-      toast.onclick = () => {
-        openTabDocente('tab-chat-docente', document.querySelectorAll('.nav-btn')[2]);
-        seleccionarChatDocente(codigoAlumno, nombreAlumno);
-        cerrarToast(toast);
-      };
-
-      container.appendChild(toast);
-      reproducirSonidoNotificacion();
-
-      setTimeout(() => {
-        cerrarToast(toast);
-      }, 5000);
-    }
-
-    function cerrarToast(toastElement) {
-      if (!toastElement || toastElement.dataset.closing) return;
-      toastElement.dataset.closing = "true";
-      toastElement.style.animation = 'fadeOut 0.3s forwards';
-      setTimeout(() => {
-        toastElement.remove();
-      }, 300);
-    }
-
+    // LISTENER EN TIEMPO REAL CON NOTIFICACIÓN Y HORA
     function escucharNuevosMensajesEnVivo() {
       supabaseClient
         .channel('schema-db-changes')
@@ -993,27 +858,18 @@
           { event: 'INSERT', schema: 'public', table: 'mensajes_chat' },
           async (payload) => {
             if (payload.new.remitente === 'alumno') {
-              const { data: alumno } = await supabaseClient
-                .from('alumnos')
-                .select('grupo, nombre')
-                .eq('codigo', payload.new.alumno_codigo)
-                .single();
+              const { data: alumno } = await supabaseClient.from('alumnos').select('grupo').eq('codigo', payload.new.alumno_codigo).single();
 
               if (alumno && alumno.grupo === grupoSesion) {
+                // Registrar para la notificación visual
+                listaMensajesNuevos.add(payload.new.alumno_codigo);
+                actualizarBadgeNotificaciones();
+
                 if (codigoChatDocenteActual === payload.new.alumno_codigo) {
                   cargarMensajesDocente();
-                } else {
-                  listaMensajesNuevos.add(payload.new.alumno_codigo);
-                  actualizarBadgeNotificaciones();
-
-                  mostrarNotificacionToast(
-                    payload.new.alumno_codigo, 
-                    alumno.nombre || payload.new.alumno_codigo, 
-                    payload.new.mensaje
-                  );
                 }
+
                 cargarBandejaMensajesDocente();
-                cargarMensajesContacto();
               }
             }
           }
@@ -1021,14 +877,11 @@
         .subscribe();
     }
 
-    // ACTUALIZA EL CÍRCULO ROJO EN LA PESTAÑA
     function actualizarBadgeNotificaciones() {
       const badge = document.getElementById('badgeNotificaciones');
-      if (!badge) return;
-
       if (listaMensajesNuevos.size > 0) {
         badge.innerText = listaMensajesNuevos.size;
-        badge.style.display = 'inline-flex';
+        badge.style.display = 'inline-block';
       } else {
         badge.innerText = '0';
         badge.style.display = 'none';
@@ -1047,7 +900,6 @@
       cargarMensajesDocente();
     }
 
-    // CARGAR MENSAJES CON FECHA Y HORA EN CADA BURBUJA
     async function cargarMensajesDocente() {
       if (!codigoChatDocenteActual) return;
 
@@ -1072,7 +924,7 @@
       let html = '';
       mensajes.forEach(m => {
         const esDocente = m.remitente === 'docente';
-        const fechaHora = formatearFechaHora(m.created_at);
+        const hora = formatearHora(m.created_at);
         
         let contenidoAdjunto = '';
         if (m.url_archivo) {
@@ -1093,12 +945,10 @@
 
         html += `
           <div style="align-self: ${esDocente ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${esDocente ? 'var(--azul-marino)' : '#ffffff'}; color: ${esDocente ? '#ffffff' : '#2d3748'}; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: ${esDocente ? 'none' : '1px solid var(--borde)'};">
-            <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 3px;">
-              <small style="font-size:10px; opacity:0.8; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
-              <small style="font-size:9px; opacity:0.7;">${fechaHora}</small>
-            </div>
+            <small style="display:block; font-size:10px; opacity:0.8; margin-bottom:3px; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
             <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
             ${contenidoAdjunto}
+            <span class="msg-hora">${hora}</span>
           </div>
         `;
       });
@@ -1139,79 +989,6 @@
         archivoInput.value = '';
         cargarMensajesDocente();
         cargarBandejaMensajesDocente();
-        cargarMensajesContacto();
-      }
-    }
-
-    // CARGAR TABLA DE CONTACTO CON FECHA Y HORA DE ENVÍO
-    async function cargarMensajesContacto() {
-      const tbody = document.getElementById('cuerpoTablaContacto');
-      if (!tbody) return;
-
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando mensajes...</td></tr>';
-
-      const { data: mensajes, error } = await supabaseClient
-        .from('mensajes_chat')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error al cargar mensajes.</td></tr>';
-        return;
-      }
-
-      if (!mensajes || mensajes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay mensajes registrados.</td></tr>';
-        return;
-      }
-
-      let html = '';
-      mensajes.forEach(m => {
-        const fechaFormateada = formatearFechaHora(m.created_at);
-
-        let adjuntosHTML = '<span style="color:#a0aec0;">Sin adjuntos</span>';
-        if (m.url_archivo) {
-          const urls = m.url_archivo.split(',');
-          adjuntosHTML = urls.map((url, i) => 
-            `<a href="${url}" target="_blank" style="color:var(--azul-rey); font-weight:600; display:block; font-size:12px;">📎 Archivo ${i+1}</a>`
-          ).join('');
-        }
-
-        html += `
-          <tr>
-            <td style="white-space: nowrap; color: #4a5568; font-weight: 500;">
-              📅 ${fechaFormateada}
-            </td>
-            <td>
-              <strong>${m.alumno_codigo}</strong><br>
-              <small style="color:#718096;">${m.remitente === 'docente' ? 'Docente' : 'Alumno / Tutor'}</small>
-            </td>
-            <td style="max-width: 300px; word-wrap: break-word;">
-              ${m.mensaje || '<em>Sin texto</em>'}
-            </td>
-            <td>${adjuntosHTML}</td>
-            <td>
-              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="eliminarMensajeContacto('${m.id}')">Eliminar</button>
-            </td>
-          </tr>
-        `;
-      });
-
-      tbody.innerHTML = html;
-    }
-
-    async function eliminarMensajeContacto(idMensaje) {
-      if (!confirm('¿Deseas eliminar este mensaje de contacto?')) return;
-
-      const { error } = await supabaseClient
-        .from('mensajes_chat')
-        .delete()
-        .eq('id', idMensaje);
-
-      if (error) {
-        alert('Error al eliminar: ' + error.message);
-      } else {
-        cargarMensajesContacto();
       }
     }
   </script>
