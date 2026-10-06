@@ -124,6 +124,7 @@
       cursor: pointer; 
       font-size: 14px; 
       transition: all 0.2s;
+      position: relative;
     }
     .nav-btn:hover { background: #cbd5e1; color: var(--azul-marino); }
     .nav-btn.active { 
@@ -134,21 +135,28 @@
 
     .badge-notif { 
       display: none; 
-      background-color: var(--vino-granate); 
+      background-color: #e53e3e; 
       color: white; 
       font-size: 11px; 
       padding: 2px 7px; 
       border-radius: 10px; 
       margin-left: 6px; 
       font-weight: 600; 
+      animation: pulse 1.5s infinite;
     }
     .badge-nuevo { 
-      background-color: var(--vino-granate); 
+      background-color: #e53e3e; 
       color: white; 
       font-size: 10px; 
       padding: 2px 6px; 
       border-radius: 4px; 
       font-weight: 600; 
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
     }
 
     /* TABLAS */
@@ -175,6 +183,14 @@
     .chat-item:hover { background-color: #edf2f7; }
     .chat-item.active { background-color: #e2e8f0; border-left: 4px solid var(--vino-granate); }
     .chat-window { width: 65%; display: flex; flex-direction: column; }
+    
+    .msg-hora {
+      display: block;
+      font-size: 10px;
+      margin-top: 4px;
+      text-align: right;
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
@@ -420,6 +436,13 @@
     let listaMensajesNuevos = new Set();
     let actividadesCargadas = []; 
 
+    // FUNCIÓN AUXILIAR PARA FORMATEAR LA HORA DE LOS MENSAJES
+    function formatearHora(fechaIso) {
+      if (!fechaIso) return '';
+      const fecha = new Date(fechaIso);
+      return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     // INICIO DE SESIÓN
     function login() {
       const gradoSelected = document.getElementById('gradoSelect').value;
@@ -638,7 +661,7 @@
       }
     }
 
-    // 1. CARGAR ALUMNOS Y MOSTRAR ÚNICAMENTE LAS ACTIVIDADES CON ESTATUS 'Pendiente'
+    // CARGAR ALUMNOS Y ACTIVIDADES PENDIENTES
     async function cargarAlumnosDelGrupo() {
       const trimestre = document.getElementById('trimestreBuscar').value;
       const tbody = document.getElementById('cuerpoTablaGrupo');
@@ -648,7 +671,6 @@
 
       const { data: alumnos } = await supabaseClient.from('alumnos').select('*').eq('grupo', grupoSesion);
       
-      // Filtrar directamente de Supabase solo las actividades que están "Pendiente"
       const { data: actividades } = await supabaseClient
         .from('actividades')
         .select('*')
@@ -664,7 +686,6 @@
       let html = '';
 
       alumnos.forEach(al => {
-        // Filtrar tareas que pertenecen al alumno y que son únicamente pendientes
         const actAlumno = actividadesCargadas.filter(a => a.alumno_codigo === al.codigo);
 
         if (actAlumno.length === 0) {
@@ -682,7 +703,6 @@
         } else {
           const primeraAct = actAlumno[0];
 
-          // Opciones que contienen únicamente actividades en estado Pendiente
           let opciones = actAlumno.map(act => `
             <option value="${act.id}">
               [Pendiente] ${act.titulo || 'Tarea Sin Título'} (${act.materia || 'General'})
@@ -724,7 +744,6 @@
       tbody.innerHTML = html;
     }
 
-    // 2. CAMBIO DINÁMICO AL SELECCIONAR OTRA ACTIVIDAD
     function cambiarActividadSeleccionada(codigoAlumno) {
       const selectAct = document.getElementById(`select-actividad-${codigoAlumno}`);
       const idActividad = parseInt(selectAct.value);
@@ -739,7 +758,6 @@
       document.getElementById(`obs-alumno-${codigoAlumno}`).value = actividad.observaciones || '';
     }
 
-    // 3. GUARDAR CAMBIOS Y REFRESCAR LA LISTA (SI SE CAMBIA A ENTREGADO O NO ENTREGADO, SE REMUEVE DE PENDIENTES)
     async function guardarEvaluacionAlumno(codigoAlumno) {
       const idActividad = document.getElementById(`select-actividad-${codigoAlumno}`).value;
       const nuevoEstado = document.getElementById(`estatus-alumno-${codigoAlumno}`).value;
@@ -757,12 +775,11 @@
         alert('Error al actualizar la calificación: ' + error.message);
       } else {
         alert('Calificación guardada correctamente.');
-        // Recargar la lista para reflejar únicamente los pendientes que restan
         cargarAlumnosDelGrupo();
       }
     }
 
-    // BANDEJA DE MENSAJES Y CHAT
+    // BANDEJA DE MENSAJES Y CHAT CON MOSTRADO DE HORA Y NOTIFICACIONES
     async function cargarBandejaMensajesDocente() {
       if (!grupoSesion) return;
 
@@ -804,12 +821,16 @@
         const alumnoObj = alumnos.find(a => a.codigo === codigoAlumno);
         const nombreAlumno = alumnoObj ? alumnoObj.nombre : codigoAlumno;
         const tieneNuevo = listaMensajesNuevos.has(codigoAlumno);
+        const horaFormateada = formatearHora(ultimoMensaje.created_at);
 
         htmlLista += `
           <div class="chat-item ${codigoChatDocenteActual === codigoAlumno ? 'active' : ''}" onclick="seleccionarChatDocente('${codigoAlumno}', '${nombreAlumno.replace(/'/g, "\\'")}')">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
               <strong style="font-size:13px; color:var(--azul-marino);">${nombreAlumno}</strong>
-              ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+              <div style="display:flex; align-items:center; gap:5px;">
+                <span style="font-size:10px; color:#a0aec0;">${horaFormateada}</span>
+                ${tieneNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+              </div>
             </div>
             <p style="font-size:12px; color:#718096; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">
               ${ultimoMensaje.remitente === 'docente' ? 'Tú: ' : ''}${ultimoMensaje.mensaje || '📎 Adjunto'}
@@ -828,6 +849,7 @@
       document.getElementById('areaRespuestaChat').style.display = 'none';
     }
 
+    // LISTENER EN TIEMPO REAL CON NOTIFICACIÓN Y HORA
     function escucharNuevosMensajesEnVivo() {
       supabaseClient
         .channel('schema-db-changes')
@@ -839,12 +861,14 @@
               const { data: alumno } = await supabaseClient.from('alumnos').select('grupo').eq('codigo', payload.new.alumno_codigo).single();
 
               if (alumno && alumno.grupo === grupoSesion) {
+                // Registrar para la notificación visual
+                listaMensajesNuevos.add(payload.new.alumno_codigo);
+                actualizarBadgeNotificaciones();
+
                 if (codigoChatDocenteActual === payload.new.alumno_codigo) {
                   cargarMensajesDocente();
-                } else {
-                  listaMensajesNuevos.add(payload.new.alumno_codigo);
-                  actualizarBadgeNotificaciones();
                 }
+
                 cargarBandejaMensajesDocente();
               }
             }
@@ -900,6 +924,7 @@
       let html = '';
       mensajes.forEach(m => {
         const esDocente = m.remitente === 'docente';
+        const hora = formatearHora(m.created_at);
         
         let contenidoAdjunto = '';
         if (m.url_archivo) {
@@ -923,6 +948,7 @@
             <small style="display:block; font-size:10px; opacity:0.8; margin-bottom:3px; font-weight:500;">${esDocente ? 'Tú (Docente)' : 'Alumno/Tutor'}</small>
             <span style="font-size:13px; word-break: break-word;">${m.mensaje || ''}</span>
             ${contenidoAdjunto}
+            <span class="msg-hora">${hora}</span>
           </div>
         `;
       });
